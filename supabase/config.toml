@@ -1,0 +1,7 @@
+project_id = "multifactu"
+[functions.sri-procesar]
+# Webhook servidor-servidor: se autentica con x-webhook-secret en el handler.
+verify_jwt = false
+[functions.planes-pago]
+# Se comprueba JWT mediante auth.getUser() dentro de la función.
+verify_jwt = false
