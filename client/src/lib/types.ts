@@ -7,7 +7,8 @@ export type Feature =
   | "alquiler"
   | "finanzas"
   | "analisis"
-  | "programada";
+  | "programada"
+  | "configuracion";
 export interface Company {
   id: string;
   tenant_id: string;
@@ -203,6 +204,8 @@ export interface Database {
           p_identificacion: string;
           p_nombre: string;
           p_consentimiento: boolean;
+          p_version_terminos: string;
+          p_version_privacidad: string;
         };
         Returns: string;
       };

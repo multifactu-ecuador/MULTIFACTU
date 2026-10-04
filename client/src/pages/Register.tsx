@@ -1,13 +1,20 @@
-import { useState, type FormEvent } from "react";
+﻿import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { db, configured, check } from "../lib/supabase";
 import { validarIdentificacion } from "../../../shared/identity.ts";
 import Brand from "../components/Brand";
+import { PRIVACY_VERSION, TERMS_VERSION } from "../lib/legal";
+
 export default function Register() {
   const [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [done, setDone] = useState(false),
-    [identification, setIdentification] = useState("");
+    [pendingEmail, setPendingEmail] = useState(""),
+    [resendBusy, setResendBusy] = useState(false),
+    [resendMessage, setResendMessage] = useState(""),
+    [resendAvailable, setResendAvailable] = useState(true),
+    [identification, setIdentification] = useState(""),
+    [legalAccepted, setLegalAccepted] = useState(false);
   const navigate = useNavigate();
   const validation = identification
     ? validarIdentificacion(
@@ -15,39 +22,77 @@ export default function Register() {
         identification,
       )
     : null;
+
+  const confirmationRedirect = () =>
+    new URL("/auth/confirm", window.location.origin).toString();
+
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!validation?.valid) {
       setError("Revisa la cédula o RUC");
       return;
     }
+    if (!legalAccepted) {
+      setError("Debes aceptar los Términos y la Política de privacidad.");
+      return;
+    }
     const values = new FormData(e.currentTarget);
+    const email = String(values.get("email")).trim().toLowerCase();
     setBusy(true);
     setError("");
     try {
       const data = check(
         await db().auth.signUp({
-          email: String(values.get("email")).trim(),
+          email,
           password: String(values.get("password")),
           options: {
-            emailRedirectTo: location.origin + "/app",
+            emailRedirectTo: confirmationRedirect(),
             data: {
               empresa: String(values.get("empresa")),
               nombre: String(values.get("nombre")),
               identificacion: identification,
-              consentimiento: values.get("consent") === "on",
+              consentimiento: true,
+              version_terminos: TERMS_VERSION,
+              version_privacidad: PRIVACY_VERSION,
             },
           },
         }),
       );
       if (data.session) navigate("/app");
-      else setDone(true);
+      else {
+        setPendingEmail(email);
+        setDone(true);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo crear tu negocio");
     } finally {
       setBusy(false);
     }
   }
+
+  async function resendConfirmation() {
+    if (!pendingEmail || !resendAvailable) return;
+    setResendBusy(true);
+    setError("");
+    setResendMessage("");
+    try {
+      check(
+        await db().auth.resend({
+          type: "signup",
+          email: pendingEmail,
+          options: { emailRedirectTo: confirmationRedirect() },
+        }),
+      );
+      setResendMessage("Enviamos otro enlace. Revisa tu bandeja de entrada y la carpeta de spam.");
+      setResendAvailable(false);
+      window.setTimeout(() => setResendAvailable(true), 60_000);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "No se pudo reenviar el correo");
+    } finally {
+      setResendBusy(false);
+    }
+  }
+
   return (
     <div className="auth-page">
       <header>
@@ -73,7 +118,7 @@ export default function Register() {
               "Caja, cuentas y análisis financiero",
               "Sin tarjeta ni cobro automático",
             ].map((t) => (
-              <li key={t}>✓ {t}</li>
+              <li key={t}>✦ {t}</li>
             ))}
           </ul>
           <small>
@@ -88,11 +133,24 @@ export default function Register() {
             <div className="notice" role="status">
               <h3>Revisa tu correo</h3>
               <p>
-                Si el registro se completó, Supabase enviará la confirmación
-                configurada. Confirma tu correo antes de entrar. Si ya tienes
-                cuenta, inicia sesión. La prueba empieza al crear el usuario,
-                incluso si falta confirmar el correo.
+                Enviamos el enlace de confirmación a <b>{pendingEmail}</b>.
+                Revisa también la carpeta de spam. Confirma tu correo antes de
+                entrar.
               </p>
+              {resendMessage && <p role="status">{resendMessage}</p>}
+              {error && <p role="alert" className="error">{error}</p>}
+              <button
+                type="button"
+                className="secondary"
+                disabled={resendBusy || !resendAvailable}
+                onClick={() => void resendConfirmation()}
+              >
+                {resendBusy
+                  ? "Reenviando..."
+                  : resendAvailable
+                    ? "Reenviar correo de confirmación"
+                    : "Espera un minuto para reenviar"}
+              </button>
               <Link to="/login">Ir a iniciar sesión</Link>
             </div>
           ) : (
@@ -163,13 +221,17 @@ export default function Register() {
                   />
                 </label>
                 <label className="checkbox">
-                  <input name="consent" type="checkbox" required />
+                  <input
+                    name="consent"
+                    type="checkbox"
+                    required
+                    checked={legalAccepted}
+                    onChange={(event) => setLegalAccepted(event.target.checked)}
+                  />
                   <span>
-                    Acepto los{" "}
-                    <Link to="/terminos">
-                      términos y política de privacidad de MULTIFACTU
-                    </Link>
-                    .
+                    He leído y acepto los <Link to="/terminos">Términos de
+                    servicio</Link> y la <Link to="/privacidad">Política de
+                    privacidad</Link> de MULTIFACTU.
                   </span>
                 </label>
                 {error && (
@@ -177,9 +239,9 @@ export default function Register() {
                     {error}
                   </p>
                 )}
-                <button disabled={busy || !configured || !validation?.valid}>
+                <button disabled={busy || !configured || !validation?.valid || !legalAccepted}>
                   {busy
-                    ? "Creando tu empresa…"
+                    ? "Creando tu empresa..."
                     : "Crear cuenta · 7 días gratis"}
                 </button>
               </form>
@@ -187,16 +249,19 @@ export default function Register() {
               <button
                 type="button"
                 className="google-btn"
-                disabled={!configured}
+                disabled={!configured || !legalAccepted}
                 onClick={() =>
                   void db().auth.signInWithOAuth({
                     provider: "google",
-                    options: { redirectTo: location.origin + "/app" },
+                    options: { redirectTo: confirmationRedirect() },
                   })
                 }
               >
                 Continuar con Google
               </button>
+              {!legalAccepted && (
+                <small>Debes aceptar los Términos y la Política de privacidad para continuar.</small>
+              )}
             </>
           )}
           <p>

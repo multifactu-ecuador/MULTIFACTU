@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+﻿import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./auth/AuthContext";
 import ProtectedRoute from "./auth/ProtectedRoute";
 import AppLayout from "./components/AppLayout";
@@ -9,6 +9,9 @@ import Register from "./pages/Register";
 import POS from "./pages/POS";
 import Dashboard from "./pages/Dashboard";
 import ScheduledInvoices from "./pages/ScheduledInvoices";
+import TemplatesEditor from "./pages/TemplatesEditor";
+
+
 import Inventory from "./pages/Inventory";
 import Customers from "./pages/Customers";
 import Finance from "./pages/Finance";
@@ -17,7 +20,13 @@ import Plans from "./pages/Plans";
 import Profile from "./pages/Profile";
 import Onboarding from "./pages/Onboarding";
 import Legal from "./pages/Legal";
+import Privacy from "./pages/Privacy";
+import DataProcessingAgreement from "./pages/DataProcessingAgreement";
 import RentalInfo from "./pages/RentalInfo";
+import AuthConfirm from "./pages/AuthConfirm";
+import Security from "./pages/Security";
+import ElectronicInvoicing from "./pages/ElectronicInvoicing";
+import BusinessIntelligence from "./pages/BusinessIntelligence";
 export default function App() {
   return (
     <BrowserRouter>
@@ -27,7 +36,13 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/registro" element={<Register />} />
           <Route path="/terminos" element={<Legal />} />
+          <Route path="/privacidad" element={<Privacy />} />
+          <Route path="/contrato-encargo" element={<DataProcessingAgreement />} />
           <Route path="/alquileres" element={<RentalInfo />} />
+          <Route path="/seguridad" element={<Security />} />
+          <Route path="/facturacion-electronica" element={<ElectronicInvoicing />} />
+          <Route path="/inteligencia-negocios" element={<BusinessIntelligence />} />
+          <Route path="/auth/confirm" element={<AuthConfirm />} />
           <Route element={<ProtectedRoute />}>
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/app" element={<AppLayout />}>
@@ -97,6 +112,7 @@ export default function App() {
               />
               <Route path="perfil" element={<Profile />} />
               <Route path="planes" element={<Plans />} />
+              <Route path="plantillas" element={<PlanGate feature="configuracion"><TemplatesEditor /></PlanGate>} />
             </Route>
           </Route>
           <Route path="*" element={<Landing />} />

@@ -1,0 +1,11 @@
+# Private backend secrets and local build artifacts
+node_modules/
+client/node_modules/
+dist/
+client/dist/
+.vercel/
+server/.env
+server/.env.*
+!server/.env.example
+.env.local
+.env.*.local

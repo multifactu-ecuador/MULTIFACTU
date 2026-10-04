@@ -5,3 +5,7 @@ verify_jwt = false
 [functions.planes-pago]
 # Se comprueba JWT mediante auth.getUser() dentro de la función.
 verify_jwt = false
+
+[functions.generar-ride]
+# Se valida el token y la pertenencia al tenant dentro del handler.
+verify_jwt = false

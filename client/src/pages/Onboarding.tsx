@@ -4,12 +4,14 @@ import { db, check } from "../lib/supabase";
 import { useAuth } from "../auth/AuthContext";
 import { validarIdentificacion } from "../../../shared/identity.ts";
 import Brand from "../components/Brand";
+import { PRIVACY_VERSION, TERMS_VERSION } from "../lib/legal";
 // Alta fiscal obligatoria para cuentas creadas vía OAuth (Google), donde el
 // trigger de registro no dispone de los datos de empresa/cédula.
 export default function Onboarding() {
   const [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
-    [identification, setIdentification] = useState("");
+    [identification, setIdentification] = useState(""),
+    [legalAccepted, setLegalAccepted] = useState(false);
   const { access, needsOnboarding, refresh, logout } = useAuth();
   const navigate = useNavigate();
   if (access && !needsOnboarding) navigate("/app", { replace: true });
@@ -25,6 +27,10 @@ export default function Onboarding() {
       setError("Revisa la cédula o RUC");
       return;
     }
+    if (!legalAccepted) {
+      setError("Debes aceptar los Términos y la Política de privacidad.");
+      return;
+    }
     const values = new FormData(e.currentTarget);
     setBusy(true);
     setError("");
@@ -34,7 +40,9 @@ export default function Onboarding() {
           p_empresa: String(values.get("empresa")),
           p_identificacion: identification,
           p_nombre: String(values.get("nombre")),
-          p_consentimiento: values.get("consent") === "on",
+          p_consentimiento: true,
+          p_version_terminos: TERMS_VERSION,
+          p_version_privacidad: PRIVACY_VERSION,
         }),
       );
       await refresh();
@@ -95,13 +103,17 @@ export default function Onboarding() {
               <small className="error">Revisa la identificación.</small>
             )}
             <label className="checkbox">
-              <input name="consent" type="checkbox" required />
+              <input
+                name="consent"
+                type="checkbox"
+                required
+                checked={legalAccepted}
+                onChange={(event) => setLegalAccepted(event.target.checked)}
+              />
               <span>
-                Acepto los{" "}
-                <Link to="/terminos">
-                  términos y política de privacidad de MULTIFACTU
-                </Link>
-                .
+                He leído y acepto los <Link to="/terminos">Términos de
+                servicio</Link> y la <Link to="/privacidad">Política de
+                privacidad</Link> de MULTIFACTU.
               </span>
             </label>
             {error && (
@@ -109,7 +121,7 @@ export default function Onboarding() {
                 {error}
               </p>
             )}
-            <button disabled={busy || !validation?.valid}>
+            <button disabled={busy || !validation?.valid || !legalAccepted}>
               {busy ? "Guardando…" : "Comenzar prueba de 7 días"}
             </button>
           </form>

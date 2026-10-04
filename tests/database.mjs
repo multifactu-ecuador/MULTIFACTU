@@ -21,6 +21,8 @@ await db.query(`insert into auth.users values ($1,$2),($3,$4)`, [
     nombre: "Ana",
     identificacion: "1710034065",
     consentimiento: true,
+    version_terminos: "2026-10-04",
+    version_privacidad: "2026-10-04",
     rol: "CAJERO",
     plan: "inicial",
   }),
@@ -30,6 +32,8 @@ await db.query(`insert into auth.users values ($1,$2),($3,$4)`, [
     nombre: "Beto",
     identificacion: "1790016919001",
     consentimiento: true,
+    version_terminos: "2026-10-04",
+    version_privacidad: "2026-10-04",
   }),
 ]);
 const tenants = (
@@ -41,6 +45,10 @@ const ta = tenants[0].tenant_id,
   tb = tenants[1].tenant_id;
 assert.notEqual(ta, tb);
 assert.equal(tenants[0].rol, "ADMIN");
+assert.equal(
+  (await db.query("select count(*) n from public.consentimientos_legales")).rows[0].n,
+  2,
+);
 assert.equal(
   Number(
     (
@@ -65,6 +73,7 @@ async function rejects(sql, args = []) {
 }
 await user(A);
 assert.equal((await db.query("select * from public.empresas")).rows.length, 1);
+assert.equal((await db.query("select * from public.consentimientos_legales")).rows.length, 1);
 assert.equal(
   (await db.query("select * from public.usuarios_perfiles")).rows.length,
   1,
@@ -218,6 +227,8 @@ await rejects("insert into auth.users values(gen_random_uuid(),$1)", [
     empresa: "Repetida",
     identificacion: "1710034065001",
     consentimiento: true,
+    version_terminos: "2026-10-04",
+    version_privacidad: "2026-10-04",
   }),
 ]);
 await owner();
@@ -255,6 +266,23 @@ await user(B);
 assert.equal(
   (await db.query("select * from public.pedidos_planes")).rows.length,
   0,
+);
+const C = "33333333-3333-4333-8333-333333333334";
+await owner();
+await db.query("insert into auth.users values($1,$2)", [C, JSON.stringify({})]);
+await user(C);
+await rejects(
+  "select public.crear_mi_empresa('OAuth sin aceptación','0999999999001','Cami',true)",
+);
+await rejects(
+  "select public.crear_mi_empresa('OAuth sin aceptación','0999999999001','Cami',false,'2026-10-04','2026-10-04')",
+);
+await db.query(
+  "select public.crear_mi_empresa('Empresa C','0999999999001','Cami',true,'2026-10-04','2026-10-04')",
+);
+assert.equal(
+  (await db.query("select * from public.consentimientos_legales")).rows.length,
+  1,
 );
 await db.close();
 console.log(

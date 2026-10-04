@@ -16,6 +16,23 @@ const methods: Record<string, string> = {
   "19": "Crédito",
   "20": "Transferencia",
 };
+type InvoiceLine = {
+  factura_id: string;
+  descripcion: string;
+  cantidad: number;
+  base: number;
+  impuesto: number;
+  costo_snapshot: number;
+};
+type Payable = {
+  id: string;
+  proveedor_id: string;
+  descripcion: string;
+  monto: number;
+  pagado: number;
+  vencimiento: string;
+};
+type Supplier = { id: string; razon_social: string };
 export default function Finance() {
   const { access } = useAuth();
   const [movements, setMovements] = useState<Movement[]>([]),
@@ -23,11 +40,11 @@ export default function Finance() {
     [closings, setClosings] = useState<Closing[]>([]),
     [templates, setTemplates] = useState<ExpenseTemplate[]>([]),
     [clients, setClients] = useState<Client[]>([]),
-    [payables, setPayables] = useState<any[]>([]),
-    [suppliers, setSuppliers] = useState<any[]>([]),
+    [payables, setPayables] = useState<Payable[]>([]),
+    [suppliers, setSuppliers] = useState<Supplier[]>([]),
     [invoices, setInvoices] = useState<Invoice[]>([]),
-    [invoiceLines, setInvoiceLines] = useState<any[]>([]),
-    [tab, setTab] = useState("resumen"),
+    [invoiceLines, setInvoiceLines] = useState<InvoiceLine[]>([]),
+    [tab, setTab] = useState("inteligencia"),
     [error, setError] = useState(""),
     [message, setMessage] = useState(""),
     [from, setFrom] = useState(today().slice(0, 8) + "01"),
@@ -64,10 +81,10 @@ export default function Finance() {
     setClosings(check(c) ?? []);
     setTemplates(check(p) ?? []);
     setClients(check(cs) ?? []);
-    setPayables((pay?.data as any[]) ?? []);
-    setSuppliers((supp?.data as any[]) ?? []);
+    setPayables((pay?.data as Payable[]) ?? []);
+    setSuppliers((supp?.data as Supplier[]) ?? []);
     setInvoices((inv?.data as Invoice[]) ?? []);
-    setInvoiceLines((det?.data as any[]) ?? []);
+    setInvoiceLines((det?.data as InvoiceLine[]) ?? []);
   }
   useEffect(() => {
     void load().catch((e) => setError(e.message));
@@ -75,6 +92,11 @@ export default function Finance() {
     return () => clearInterval(timer);
   }, []);
   const filtered = movements.filter((m) => m.fecha >= from && m.fecha <= to),
+    periodInvoices = invoices.filter((invoice) => invoice.fecha >= from && invoice.fecha <= to),
+    authorizedInvoiceIds = new Set(invoices.map((invoice) => invoice.id)),
+    periodInvoiceIds = new Set(periodInvoices.map((invoice) => invoice.id)),
+    authorizedLines = invoiceLines.filter((line) => authorizedInvoiceIds.has(line.factura_id)),
+    periodLines = authorizedLines.filter((line) => periodInvoiceIds.has(line.factura_id)),
     income = filtered
       .filter((m) => m.tipo === "INGRESO")
       .reduce((s, m) => s + Number(m.monto), 0),
@@ -93,13 +115,57 @@ export default function Finance() {
       .reduce((s, m) => s + Number(m.monto), 0),
   }));
   const max = Math.max(1, ...byMethod.map((m) => m.total));
-  const salesCosts = invoiceLines.reduce(
+  const salesCosts = authorizedLines.reduce(
     (s, l) => s + Number(l.costo_snapshot ?? 0) * Number(l.cantidad),
     0,
   );
   const salesTotal = invoices.reduce((s, i) => s + Number(i.total ?? 0), 0);
   const profit = salesTotal - salesCosts;
   const pendingPayables = payables.filter((p) => Number(p.pagado) < Number(p.monto));
+  const periodSales = periodInvoices.reduce((sum, invoice) => sum + Number(invoice.total), 0);
+  const salesByDate = periodInvoices
+    .reduce<Record<string, number>>((totals, invoice) => {
+      totals[invoice.fecha] = (totals[invoice.fecha] ?? 0) + Number(invoice.total);
+      return totals;
+    }, {});
+  const dailySales = Object.entries(salesByDate)
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([date, total]) => ({ date, total }));
+  const maxDailySale = Math.max(1, ...dailySales.map((sale) => sale.total));
+  const topItems = Object.values(
+    periodLines.reduce<Record<string, { name: string; quantity: number; total: number }>>((items, line) => {
+      const key = line.descripcion.trim() || "Ítem sin descripción";
+      const item = items[key] ?? { name: key, quantity: 0, total: 0 };
+      item.quantity += Number(line.cantidad);
+      item.total += Number(line.base) + Number(line.impuesto);
+      items[key] = item;
+      return items;
+    }, {}),
+  )
+    .sort((left, right) => right.total - left.total)
+    .slice(0, 6);
+  const maxTopItem = Math.max(1, ...topItems.map((item) => item.total));
+  const overdueReceivables = quotas
+    .filter((quota) => Number(quota.pagado) < Number(quota.monto) && quota.vencimiento < today())
+    .map((quota) => ({
+      ...quota,
+      customer: clients.find((client) => client.id === quota.cliente_id)?.nombre ?? "Cliente sin nombre",
+      remaining: Number(quota.monto) - Number(quota.pagado),
+    }))
+    .sort((left, right) => left.vencimiento.localeCompare(right.vencimiento));
+  const outstandingReceivables = quotas.reduce(
+    (sum, quota) => sum + Math.max(0, Number(quota.monto) - Number(quota.pagado)),
+    0,
+  );
+  const payableReport = pendingPayables
+    .map((payable) => ({
+      ...payable,
+      supplier: suppliers.find((supplier) => supplier.id === payable.proveedor_id)?.razon_social ?? "Proveedor sin nombre",
+      remaining: Math.max(0, Number(payable.monto) - Number(payable.pagado)),
+    }))
+    .sort((left, right) => left.vencimiento.localeCompare(right.vencimiento));
+  const pendingPayablesTotal = payableReport.reduce((sum, payable) => sum + payable.remaining, 0);
+  const overduePayables = payableReport.filter((payable) => payable.vencimiento < today());
   const system = movements
     .filter((m) => m.fecha === date && m.metodo_pago === "01")
     .reduce(
@@ -152,8 +218,8 @@ export default function Finance() {
       <div className="page-heading">
         <div>
           <p className="eyebrow">CONTROL EMPRESARIAL / LUXURY</p>
-          <h1>Finanzas más claras.</h1>
-          <p>Separa facturación, cobros y dinero disponible.</p>
+          <h1>Inteligencia de negocios.</h1>
+          <p>Ventas, cartera, pagos y utilidad basados en los datos de tu empresa.</p>
         </div>
         <div className="date-filter">
           <input
@@ -186,6 +252,7 @@ export default function Finance() {
       </div>
       <div className="tabs">
         {[
+          ["inteligencia", "Inteligencia"],
           ["resumen", "Resumen"],
           ["caja", "Cierre de caja"],
           ["cartera", "Cuentas por cobrar"],
@@ -211,6 +278,69 @@ export default function Finance() {
         <p className="notice" role="status">
           {message}
         </p>
+      )}
+      {tab === "inteligencia" && (
+        <div className="business-intelligence">
+          <div className="metric-grid intelligence-metrics">
+            {[
+              ["Ventas autorizadas", periodSales, `${periodInvoices.length} comprobantes`],
+              ["Por cobrar", outstandingReceivables, `${overdueReceivables.length} vencidas`],
+              ["Por pagar", pendingPayablesTotal, `${overduePayables.length} vencidas`],
+              ["Utilidad bruta", periodLines.reduce((sum, line) => sum + Number(line.base) + Number(line.impuesto) - Number(line.costo_snapshot) * Number(line.cantidad), 0), "En el período"],
+            ].map(([label, value, detail]) => (
+              <article className="card" key={String(label)}>
+                <small>{label}</small>
+                <b>{money(Number(value))}</b>
+                <span>{detail}</span>
+              </article>
+            ))}
+          </div>
+
+          <div className="intelligence-grid">
+            <section className="card intelligence-card sales-trend-card">
+              <div className="intelligence-card-heading">
+                <div><h2>Ventas autorizadas por día</h2><p className="muted">Período seleccionado</p></div>
+                <b>{money(periodSales)}</b>
+              </div>
+              {dailySales.length ? (
+                <div className="sales-trend-chart" role="img" aria-label="Gráfico de ventas autorizadas por día">
+                  {dailySales.map((sale) => (
+                    <div className="sales-trend-column" key={sale.date} title={`${sale.date}: ${money(sale.total)}`}>
+                      <i style={{ height: `${Math.max(8, (sale.total / maxDailySale) * 100)}%` }} />
+                      <small>{sale.date.slice(5).replace("-", "/")}</small>
+                    </div>
+                  ))}
+                </div>
+              ) : <p className="empty-state">No hay ventas autorizadas en el período seleccionado.</p>}
+            </section>
+
+            <section className="card intelligence-card">
+              <div className="intelligence-card-heading"><div><h2>Ventas por ítem</h2><p className="muted">Productos y servicios con mayor facturación</p></div></div>
+              {topItems.length ? <div className="top-items-chart">
+                {topItems.map((item) => <div key={item.name}>
+                  <span><b>{item.name}</b><small>{Number(item.quantity).toFixed(2)} unidades · {money(item.total)}</small></span>
+                  <div><i style={{ width: `${(item.total / maxTopItem) * 100}%` }} /></div>
+                </div>)}
+              </div> : <p className="empty-state">Aún no hay ítems facturados en este período.</p>}
+            </section>
+          </div>
+
+          <div className="intelligence-grid reports-grid">
+            <section className="card intelligence-card">
+              <div className="intelligence-card-heading"><div><h2>Cartera vencida</h2><p className="muted">Clientes con saldo pendiente vencido</p></div><button className="secondary" onClick={() => setTab("cartera")}>Ver cartera</button></div>
+              {overdueReceivables.length ? <div className="insight-list">
+                {overdueReceivables.slice(0, 5).map((quota) => <div key={quota.id}><span><b>{quota.customer}</b><small>Venció {quota.vencimiento}</small></span><strong>{money(quota.remaining)}</strong></div>)}
+              </div> : <p className="empty-state">No tienes cuentas por cobrar vencidas.</p>}
+            </section>
+
+            <section className="card intelligence-card">
+              <div className="intelligence-card-heading"><div><h2>Pagos a proveedores</h2><p className="muted">Saldos pendientes ordenados por vencimiento</p></div><button className="secondary" onClick={() => setTab("pagar")}>Ver pagos</button></div>
+              {payableReport.length ? <div className="insight-list">
+                {payableReport.slice(0, 5).map((payable) => <div key={payable.id}><span><b>{payable.supplier}</b><small>{payable.descripcion} · vence {payable.vencimiento}</small></span><strong>{money(payable.remaining)}</strong></div>)}
+              </div> : <p className="empty-state">No tienes pagos pendientes registrados.</p>}
+            </section>
+          </div>
+        </div>
       )}
       {tab === "resumen" && (
         <div className="finance-grid">

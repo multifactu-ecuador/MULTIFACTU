@@ -26,7 +26,7 @@ export const plans = [
       "Servicios y proformas",
       "Gestión de clientes",
       "Nota de crédito de demostración",
-      "Envío de comprobantes por WhatsApp/Correo",
+      "Compartir comprobantes por WhatsApp/Correo",
     ],
   },
   {
@@ -40,7 +40,7 @@ export const plans = [
       "Alquiler de maquinaria y herramientas",
       "Contratos y garantías",
       "Control de fechas y disponibilidad",
-      "Emisión SRI real en pruebas",
+      "Flujo de comprobantes para pruebas",
     ],
     popular: true,
   },
@@ -56,7 +56,7 @@ export const plans = [
       "Cuentas por cobrar y pagar",
       "Análisis de rentabilidad",
       "Base para facturación programada",
-      "XAdES-BES + esquema SRI vigente",
+      "Base para integración SRI y firma electrónica",
     ],
   },
 ];
@@ -67,6 +67,9 @@ export default function Landing() {
         <Brand />
         <nav>
           <a href="#modulos">Soluciones</a>
+          <Link to="/facturacion-electronica">Facturación electrónica</Link>
+          <Link to="/inteligencia-negocios">Inteligencia</Link>
+          <Link to="/seguridad">Seguridad</Link>
           <Link to="/alquileres">Alquileres</Link>
           <a href="#planes">Planes</a>
         </nav>
@@ -295,22 +298,22 @@ export default function Landing() {
       </main>
       <section className="trust-section">
         <p className="eyebrow">CONFIANZA Y CUMPLIMIENTO</p>
-        <h2>Preparado para la facturación electrónica del SRI</h2>
+        <h2>Una base para tu facturación electrónica</h2>
         <div className="trust-grid">
           <article>
             <FileCheck2 size={26} />
-            <h3>Comprobantes con clave de acceso</h3>
+            <h3>Claves de acceso en demostración</h3>
             <p>
-              Facturas y notas de crédito con clave de acceso de 49 dígitos,
+              Flujos de facturas y notas de crédito con claves de 49 dígitos y
               secuenciales por establecimiento y punto de emisión.
             </p>
           </article>
           <article>
             <BadgeCheck size={26} />
-            <h3>Esquema tributario SRI</h3>
+            <h3>Estructura tributaria inicial</h3>
             <p>
-              IVA desglosado 0%, 5% y 15%, tarifas vigentes y XML con la
-              estructura exigida para recepción y autorización.
+              IVA desglosado 0%, 5% y 15% y XML de demostración como base de
+              una futura integración tributaria.
             </p>
           </article>
           <article>
@@ -323,26 +326,29 @@ export default function Landing() {
           </article>
           <article>
             <ServerCog size={26} />
-            <h3>Infraestructura segura</h3>
+            <h3>Infraestructura con controles</h3>
             <p>
-              Supabase sobre PostgreSQL cifrado en tránsito (TLS), respaldos
-              gestionados y certificados en almacenamiento privado.
+              Configuración con PostgreSQL, cifrado en tránsito (TLS) y
+              certificados en almacenamiento privado.
             </p>
           </article>
         </div>
         <p className="scope-note">
-          MULTIFACTU genera comprobantes conforme al esquema del SRI. En esta
-          fase la firma XAdES y el envío al SRI están simulados: activa la
-          integración real con tu certificado .p12 antes de operar en
-          producción.
+          En esta fase la firma XAdES y el envío al SRI están simulados. Antes
+          de operar en producción se debe completar la integración, validar la
+          ficha técnica vigente y configurar un certificado .p12 válido.
         </p>
       </section>
       <footer>
         <Brand />
         <p>Ventas, alquileres, servicios y mantenimiento para Ecuador.</p>
         <div>
+          <Link to="/facturacion-electronica">Facturación electrónica</Link>
+          <Link to="/inteligencia-negocios">Inteligencia de negocios</Link>
+          <Link to="/seguridad">Seguridad</Link>
           <Link to="/terminos">Términos de servicio</Link>
-          <Link to="/terminos#privacidad">Política de privacidad</Link>
+          <Link to="/privacidad">Política de privacidad</Link>
+          <Link to="/contrato-encargo">Contrato de encargo</Link>
           <a href="tel:0987516088">0987516088</a>
         </div>
         <small>

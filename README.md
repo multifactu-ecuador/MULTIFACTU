@@ -28,9 +28,9 @@ Abre http://localhost:5173. Sin credenciales puedes ver portada, planes y formul
 
 | Plan    | Precio mensual sin IVA | Permisos                                                |
 | ------- | ---------------------: | ------------------------------------------------------- |
-| Inicial |                     $5 | Facturas demo, catálogo, productos, servicios, clientes |
-| Pro     |                    $10 | Inicial + alquiler, fechas, reservas y garantías        |
-| Luxury  |                    $12 | Pro + caja, cobros, gastos y acceso financiero          |
+| Inicial |                  $6,99 | Facturas demo, catálogo, productos, servicios, clientes |
+| Pro     |                 $11,99 | Inicial + alquiler, fechas, reservas y garantías        |
+| Luxury  |                 $18,99 | Pro + caja, cobros, gastos y acceso financiero          |
 
 Los nuevos negocios reciben Luxury durante **604800 segundos**, desde el alta en Auth, aunque la confirmación de correo esté pendiente. Después se bloquean las operaciones. Login, datos del perfil de acceso y compra de plan siguen disponibles. PostgreSQL usa su propio reloj y no acepta cambios de plan desde el navegador. Una cédula y su RUC natural asociado comparten identidad para impedir dos pruebas con esos formatos.
 

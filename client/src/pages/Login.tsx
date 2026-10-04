@@ -1,12 +1,14 @@
-import { useState, type FormEvent } from "react";
+﻿import { useState, type FormEvent } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { db, configured, check } from "../lib/supabase";
 import Brand from "../components/Brand";
+
 export default function Login() {
   const [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const navigate = useNavigate();
   const location = useLocation();
+
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
@@ -31,6 +33,7 @@ export default function Login() {
       setBusy(false);
     }
   }
+
   return (
     <div className="auth-page">
       <header>
@@ -80,7 +83,7 @@ export default function Login() {
               </p>
             )}
             <button disabled={busy || !configured}>
-              {busy ? "Ingresando…" : "Iniciar sesión"}
+              {busy ? "Ingresando..." : "Iniciar sesión"}
             </button>
           </form>
           <p className="divider">o continúa con</p>
@@ -91,7 +94,7 @@ export default function Login() {
             onClick={() =>
               void db().auth.signInWithOAuth({
                 provider: "google",
-                options: { redirectTo: window.location.origin + "/app" },
+                options: { redirectTo: window.location.origin + "/auth/confirm" },
               })
             }
           >

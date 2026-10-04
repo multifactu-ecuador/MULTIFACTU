@@ -1,6 +1,17 @@
 import { useEffect, useState } from "react";
 import { db, check, money } from "../lib/supabase";
 import type { Invoice } from "../lib/types";
+
+const htmlEntities: Record<string, string> = {
+  "&": "&amp;",
+  "<": "&lt;",
+  ">": "&gt;",
+  '"': "&quot;",
+  "'": "&#39;",
+};
+const escapeHtml = (value: unknown) =>
+  String(value ?? "").replace(/[&<>"']/g, (character) => htmlEntities[character]);
+
 export default function Documents() {
   const [rows, setRows] = useState<Invoice[]>([]),
     [error, setError] = useState("");
@@ -57,7 +68,7 @@ export default function Documents() {
     const items = ((det ?? []) as any[])
       .map(
         (d) =>
-          `<tr><td>${d.descripcion}</td><td>${Number(d.cantidad).toFixed(2)}</td><td>${moneyNum(d.precio)}</td><td>${moneyNum(d.base)}</td><td>${d.iva}%</td><td>${moneyNum(d.impuesto)}</td></tr>`,
+          `<tr><td>${escapeHtml(d.descripcion)}</td><td>${Number(d.cantidad).toFixed(2)}</td><td>${moneyNum(d.precio)}</td><td>${moneyNum(d.base)}</td><td>${Number(d.iva)}%</td><td>${moneyNum(d.impuesto)}</td></tr>`,
       )
       .join("");
     const html = `<!doctype html><html><head><meta charset="utf-8"><title>RIDE ${id.slice(0, 8)}</title><style>
@@ -69,26 +80,22 @@ export default function Documents() {
       .totals{margin-top:14px;float:right;text-align:right}
       @media print { button{display:none} }
     </style></head><body>
-      <h1>${emisor.razon_social ?? "MULTIFACTU"}</h1>
+      <h1>${escapeHtml(emisor.razon_social ?? "MULTIFACTU")}</h1>
       ${logoDataUrl ? `<img src="${logoDataUrl}" alt="logo" style="max-height:60px;margin-bottom:8px;display:block" />` : ""}
-      <div><b>RUC:</b> ${emisor.ruc ?? "-"} &nbsp; <b>Ambiente:</b> ${(row as any).ambiente_sri}</div>
-      <div><b>Dirección:</b> ${emisor.direccion ?? "-"}</div>
+      <div><b>RUC:</b> ${escapeHtml(emisor.ruc ?? "-")} &nbsp; <b>Ambiente:</b> ${escapeHtml((row as any).ambiente_sri)}</div>
+      <div><b>Dirección:</b> ${escapeHtml(emisor.direccion ?? "-")}</div>
       <hr/>
-      <div><b>Cliente:</b> ${cliente.nombre ?? "-"} · ${cliente.identificacion ?? "-"}</div>
-      <div><b>Factura:</b> ${id.slice(0, 8)} · <b>Fecha:</b> ${row.fecha}</div>
-      <div><b>Estado:</b> ${row.estado}</div>
-      <p><b>Clave de acceso:</b> ${(row as any).clave_acceso ?? "(simulada)"}</p>
+      <div><b>Cliente:</b> ${escapeHtml(cliente.nombre ?? "-")} · ${escapeHtml(cliente.identificacion ?? "-")}</div>
+      <div><b>Factura:</b> ${escapeHtml(id.slice(0, 8))} · <b>Fecha:</b> ${escapeHtml(row.fecha)}</div>
+      <div><b>Estado:</b> ${escapeHtml(row.estado)}</div>
+      <p><b>Clave de acceso:</b> ${escapeHtml((row as any).clave_acceso ?? "(simulada)")}</p>
       <table><thead><tr><th>Detalle</th><th>Cant.</th><th>Precio</th><th>Base</th><th>IVA</th><th>Impuesto</th></tr></thead><tbody>${items}</tbody></table>
       <div class="totals">
         <b>Total sin IVA:</b> ${moneyNum(Number((row as any).subtotal_0) + Number((row as any).subtotal_5) + Number((row as any).subtotal_15))}<br/>
         <b>IVA:</b> ${moneyNum(Number((row as any).iva_5 ?? 0) + Number((row as any).iva_15 ?? 0))}<br/>
         <b>Total:</b> ${moneyNum(row.total)}
       </div>
-      ${(row as any).clave_acceso ? `
-      <div style="text-align:center;margin-top:18px">
-        <p><b>Clave de acceso:</b> ${(row as any).clave_acceso}</p>
-        <img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${(row as any).clave_acceso}" alt="QR clave acceso" />
-      </div>` : ""}
+      ${(row as any).clave_acceso ? `<div style="text-align:center;margin-top:18px"><p><b>Clave de acceso:</b> ${escapeHtml((row as any).clave_acceso)}</p></div>` : ""}
       <p style="margin-top:40px">Representación impresa del comprobante electrónico (RIDE) — fase de demostración.</p>
       <button onclick="window.print()">Imprimir</button>
       <script>setTimeout(()=>window.print(),350);</script>
@@ -97,6 +104,37 @@ export default function Documents() {
     if (!w) throw Error("El navegador bloqueó la ventana");
     w.document.write(html);
     w.document.close();
+  }
+  async function downloadRide(id: string) {
+    const {
+      data: { session },
+    } = await db().auth.getSession();
+    if (!session) throw Error("Tu sesión venció. Inicia sesión nuevamente.");
+
+    const baseUrl = import.meta.env.VITE_SUPABASE_URL?.replace(/\/$/, "");
+    const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+    if (!baseUrl || !publishableKey) throw Error("Supabase no está configurado.");
+
+    const response = await fetch(`${baseUrl}/functions/v1/generar-ride`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        apikey: publishableKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ id, tipo: "factura" }),
+    });
+    if (!response.ok) {
+      const payload = await response.json().catch(() => null);
+      throw Error(payload?.error ?? "No se pudo generar el PDF RIDE.");
+    }
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `RIDE-${id.slice(0, 8)}.pdf`;
+    link.click();
+    URL.revokeObjectURL(url);
   }
   async function download(id: string) {
     const row = check(
@@ -176,6 +214,14 @@ export default function Documents() {
                     }
                   >
                     Imprimir
+                  </button>{" "}
+                  <button
+                    className="secondary"
+                    onClick={() =>
+                      void downloadRide(r.id).catch((e) => setError(e.message))
+                    }
+                  >
+                    Descargar PDF RIDE
                   </button>{" "}
                   {(() => {
                     const email = (r as any).clientes?.email ?? "";

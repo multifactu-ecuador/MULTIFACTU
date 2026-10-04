@@ -9,6 +9,9 @@ import {
   LockKeyhole,
   LogOut,
   CalendarClock,
+  FileText,
+  Layout,
+  Palette,
 } from "lucide-react";
 import { useAuth } from "../auth/AuthContext";
 import Brand from "./Brand";
@@ -55,6 +58,12 @@ const routes: Array<{
     name: "Finanzas y caja",
     icon: ChartNoAxesCombined,
     feature: "finanzas",
+  },
+  {
+    url: "/app/plantillas",
+    name: "Plantillas docs",
+    icon: Palette,
+    feature: "configuracion",
   },
   {
     url: "/app/programadas",
