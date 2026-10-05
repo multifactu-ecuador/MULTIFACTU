@@ -52,9 +52,14 @@ export default function PoliticaSeguridad() {
           Cifrado en tránsito (TLS), almacenamiento de archivos privado y
           webhooks o tareas automáticas que exigen un secreto compartido: nada
           entra al sistema sin validarse y los intentos quedan registrados. La
-          web se sirve además con cabeceras de seguridad —X-Content-Type-Options
-          y X-Frame-Options— que impiden la interpretación errónea de archivos y
-          que la aplicación sea embebida en otros sitios (clickjacking).
+          web se sirve con cabeceras de seguridad: Content-Security-Policy
+          (sólo recursos propios y Supabase, sin scripts externos), el
+          X-Content-Type-Options y el X-Frame-Options que impiden la
+          interpretación errónea de archivos y el marco externo de la
+          aplicación (clickjacking), Referrer-Policy (no se filtran direcciones
+          completas a otros sitios), Permissions-Policy (cámara, micrófono,
+          geolocalización y similares desactivados) y Cross-Origin-Opener-Policy
+          y Cross-Origin-Resource-Policy (protección entre orígenes).
         </p>
 
         <h2>6. Seguridad del ciclo de desarrollo</h2>

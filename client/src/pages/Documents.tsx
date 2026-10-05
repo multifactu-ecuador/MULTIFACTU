@@ -130,13 +130,22 @@ export default function Documents() {
       </div>
       ${(row as any).clave_acceso ? `<div style="text-align:center;margin-top:18px"><p><b>Clave de acceso:</b> ${escapeHtml((row as any).clave_acceso)}</p></div>` : ""}
       <p style="margin-top:40px">Representación impresa del comprobante electrónico (RIDE).${(row as any).simulacion ? " Emisión en fase de validación: sin validez tributaria hasta activar el SRI real." : ""}</p>
-      <button onclick="window.print()">Imprimir</button>
-      <script>setTimeout(()=>window.print(),350);</script>
+      <button id="imprimir-ride">Imprimir</button>
     </body></html>`;
     const w = window.open("", "_blank", "width=820,height=1000");
     if (!w) throw Error("El navegador bloqueó la ventana");
     w.document.write(html);
     w.document.close();
+    // Se enlaza desde la página madre: la Content-Security-Policy no permite
+    // scripts ni manejadores inline ni en el documento principal ni en el popup.
+    w.document.getElementById("imprimir-ride")?.addEventListener("click", () => w.print());
+    setTimeout(() => {
+      try {
+        w.print();
+      } catch {
+        /* si el navegador exige gesto del usuario, está el botón Imprimir */
+      }
+    }, 350);
   }
   async function downloadRide(id: string) {
     const {
