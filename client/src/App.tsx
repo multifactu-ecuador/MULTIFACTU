@@ -27,6 +27,9 @@ import DataProcessingAgreement from "./pages/DataProcessingAgreement";
 import RentalInfo from "./pages/RentalInfo";
 import AuthConfirm from "./pages/AuthConfirm";
 import Security from "./pages/Security";
+import Cookies from "./pages/Cookies";
+import PoliticaSeguridad from "./pages/PoliticaSeguridad";
+import CumplimientoLegal from "./pages/CumplimientoLegal";
 import ElectronicInvoicing from "./pages/ElectronicInvoicing";
 import BusinessIntelligence from "./pages/BusinessIntelligence";
 import Proformas from "./pages/Proformas";
@@ -45,6 +48,9 @@ export default function App() {
           <Route path="/contrato-encargo" element={<DataProcessingAgreement />} />
           <Route path="/alquileres" element={<RentalInfo />} />
           <Route path="/seguridad" element={<Security />} />
+          <Route path="/politica-seguridad" element={<PoliticaSeguridad />} />
+          <Route path="/cookies" element={<Cookies />} />
+          <Route path="/cumplimiento-legal" element={<CumplimientoLegal />} />
           <Route path="/facturacion-electronica" element={<ElectronicInvoicing />} />
           <Route path="/inteligencia-negocios" element={<BusinessIntelligence />} />
           <Route path="/auth/confirm" element={<AuthConfirm />} />

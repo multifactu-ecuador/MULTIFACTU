@@ -39,7 +39,7 @@ export default function Security() {
         <div className="info-section-heading"><p className="eyebrow">CATÁLOGO DE SEGURIDAD</p><h2>Cómo protegemos cada parte del sistema.</h2></div>
         <div className="security-grid">{controls.map(({ icon: Icon, title, text }) => <article key={title}><Icon size={25} /><h3>{title}</h3><p>{text}</p></article>)}</div>
       </section>
-      <section className="info-banner"><ShieldCheck size={28} /><div><h2>Seguridad verificable, no promesas vacías.</h2><p>Cada función del servidor valida origen, sesión y rol antes de responder; la firma electrónica jamás sale de procesos privados y su contraseña vive cifrada en Vault. RUFO, el asistente de IA, trabaja solo con los datos de tu empresa —memoria que tú controlas—, nunca con los de otras cuentas ni para entrenar modelos. Nunca compartas la contraseña de tu firma por WhatsApp ni correo: cárgala solo desde «Mi empresa» y verifícala con el botón correspondiente.</p></div></section>
+      <section className="info-banner"><ShieldCheck size={28} /><div><h2>Seguridad verificable, no promesas vacías.</h2><p>Cada función del servidor valida origen, sesión y rol antes de responder; la firma electrónica jamás sale de procesos privados y su contraseña vive cifrada en Vault. RUFO, el asistente de IA, trabaja solo con los datos de tu empresa —memoria que tú controlas—, nunca con los de otras cuentas ni para entrenar modelos. Nunca compartas la contraseña de tu firma por WhatsApp ni correo: cárgala solo desde «Mi empresa» y verifícala con el botón correspondiente. Documento completo: <Link to="/politica-seguridad">Política de seguridad de la información</Link>.</p></div></section>
       <section className="info-section info-faq">
         <p className="eyebrow">PREGUNTAS FRECUENTES</p>
         <div>
@@ -50,6 +50,6 @@ export default function Security() {
         </div>
       </section>
     </main>
-    <footer><Brand /><p>Sistema de facturación para ventas, alquileres y servicios en Ecuador.</p><div><Link to="/facturacion-electronica">Facturación electrónica</Link><Link to="/inteligencia-negocios">Inteligencia de negocios</Link><Link to="/terminos">Términos de servicio</Link><Link to="/privacidad">Política de privacidad</Link><Link to="/contrato-encargo">Contrato de encargo</Link></div><small>© 2026 MULTIFACTU · Seguridad explicada de forma transparente.</small></footer>
+    <footer><Brand /><p>Sistema de facturación para ventas, alquileres y servicios en Ecuador.</p><div><Link to="/facturacion-electronica">Facturación electrónica</Link><Link to="/inteligencia-negocios">Inteligencia de negocios</Link><Link to="/terminos">Términos de servicio</Link><Link to="/privacidad">Política de privacidad</Link><Link to="/contrato-encargo">Contrato de encargo</Link><Link to="/cookies">Política de cookies</Link><Link to="/cumplimiento-legal">Cumplimiento legal</Link></div><small>© 2026 MULTIFACTU · Seguridad explicada de forma transparente.</small></footer>
   </div>;
 }

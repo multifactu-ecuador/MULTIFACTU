@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import Brand from "../components/Brand";
-import { LEGAL_EFFECTIVE_DATE, PRIVACY_VERSION } from "../lib/legal";
+import { LEGAL_UPDATED_DATE, PRIVACY_VERSION } from "../lib/legal";
 
 export default function Privacy() {
   return (
@@ -12,7 +12,7 @@ export default function Privacy() {
       <main>
         <p className="eyebrow">DOCUMENTO LEGAL</p>
         <h1>Política de privacidad</h1>
-        <p className="legal-meta">Vigencia: {LEGAL_EFFECTIVE_DATE} · Versión: {PRIVACY_VERSION}</p>
+        <p className="legal-meta">Vigencia: {LEGAL_UPDATED_DATE} · Versión: {PRIVACY_VERSION}</p>
         <p className="notice">
           Completa antes de publicar: [razón social], [RUC] y la lista de
           subencargados. Esta política no
@@ -137,6 +137,7 @@ export default function Privacy() {
           autenticar la sesión y mantener funciones esenciales. Antes de usar
           cookies o tecnologías no esenciales, MULTIFACTU deberá informar su
           finalidad y obtener las elecciones que exija la normativa aplicable.
+          Consulta la <Link to="/cookies">Política de cookies</Link>.
           Informaremos los cambios relevantes de esta Política por medios
           razonables y, cuando corresponda, solicitaremos una nueva aceptación.
         </p>
