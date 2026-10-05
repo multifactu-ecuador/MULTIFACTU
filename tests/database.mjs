@@ -4,6 +4,12 @@ import assert from "node:assert/strict";
 const db = new PGlite();
 await db.exec(`create role anon;create role authenticated;create role service_role bypassrls;
 create schema auth;create table auth.users(id uuid primary key,raw_user_meta_data jsonb,email text);
+-- El contrato histórico (uuid) es el que exigen las migraciones previas a la
+-- FASE 2: sus funciones SQL y policies comparan 'columna_uuid = auth.uid()' y
+-- PostgreSQL valida eso al crearlas. La migración 202610060001_clerk_identidad
+-- la sustituye por la versión text (misma lectura de claims, sin cast) justo
+-- antes de que arrancen los fixtures y los tests: todo lo que viene a
+-- continuación corre ya contra identidad en texto.
 create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
 grant usage on schema auth to authenticated;grant execute on function auth.uid() to authenticated;
 create schema storage;create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint);
@@ -14,30 +20,40 @@ for (const name of (await readdir("supabase/migrations")).sort()) {
 }
 const A = "11111111-1111-4111-8111-111111111111",
   B = "22222222-2222-4222-8222-222222222222";
-await db.query(`insert into auth.users values ($1,$2,$3),($4,$5,$6)`, [
-  A,
-  JSON.stringify({
-    empresa: "Empresa A",
-    nombre: "Ana",
-    identificacion: "1710034065",
-    consentimiento: true,
-    version_terminos: "2026-10-04",
-    version_privacidad: "2026-10-04",
-    rol: "CAJERO",
-    plan: "inicial",
-  }),
-  "ana@ejemplo.com",
-  B,
-  JSON.stringify({
-    empresa: "Empresa B",
-    nombre: "Beto",
-    identificacion: "1790016919001",
-    consentimiento: true,
-    version_terminos: "2026-10-04",
-    version_privacidad: "2026-10-04",
-  }),
-  "lopeznieto2512@gmail.com",
-]);
+// El trigger crear_negocio_al_registrarse ya no existe (autenticación Clerk):
+// el alta de negocio la hace el frontend con crear_mi_empresa. El bootstrap
+// replica a mano lo que creaba ese trigger, con el email que ahora vive en
+// usuarios_perfiles (B es el superadmin: su correo es el de la caché de bypass).
+await db.query(
+  `insert into public.empresas(id,tenant_id,nombre,identificacion_registro,razon_social,ruc) values
+    ($1,$1,'Empresa A','1710034065','Empresa A',null),
+    ($2,$2,'Empresa B','1790016919001','Empresa B','1790016919001')`,
+  [A, B],
+);
+await db.query(
+  `insert into public.usuarios_perfiles(id,tenant_id,rol,nombre,email) values
+    ($1::text,$1::uuid,'ADMIN','Ana','ana@ejemplo.com'),
+    ($2::text,$2::uuid,'ADMIN','Beto','lopeznieto2512@gmail.com')`,
+  [A, B],
+);
+await db.query(
+  `insert into public.suscripciones(tenant_id,plan,estado,inicio,fin) values
+    ($1,'luxury','trial',now(),now()+interval '7 days'),
+    ($2,'luxury','trial',now(),now()+interval '7 days')`,
+  [A, B],
+);
+await db.query(
+  `insert into public.clientes(tenant_id,tipo_id,identificacion,nombre,direccion) values
+    ($1,'07','9999999999999','CONSUMIDOR FINAL','Ecuador'),
+    ($2,'07','9999999999999','CONSUMIDOR FINAL','Ecuador')`,
+  [A, B],
+);
+await db.query(
+  `insert into public.consentimientos_legales(usuario_id,tenant_id,version_terminos,version_privacidad,version_encargo,canal) values
+    ($1::text,$1::uuid,'2026-10-04','2026-10-04','2026-10-04','registro_email'),
+    ($2::text,$2::uuid,'2026-10-04','2026-10-04','2026-10-04','registro_email')`,
+  [A, B],
+);
 const tenants = (
   await db.query(
     `select id,tenant_id,rol from public.usuarios_perfiles order by id`,
@@ -224,16 +240,12 @@ await rejects("select public.crear_factura($1,$2,gen_random_uuid())", [
   JSON.stringify([{ id: prod, cantidad: 1, descuento: 0 }]),
 ]);
 await owner();
-await rejects("insert into auth.users values(gen_random_uuid(),$1,$2)", [
-  JSON.stringify({
-    empresa: "Repetida",
-    identificacion: "1710034065001",
-    consentimiento: true,
-    version_terminos: "2026-10-04",
-    version_privacidad: "2026-10-04",
-  }),
-  "repetida@ejemplo.com",
-]);
+// Ya no hay trigger sobre auth.users; el equivalente en el mundo Clerk es que
+// quien ya tiene empresa no pueda volver a llamar crear_mi_empresa.
+await user(A);
+await rejects(
+  "select public.crear_mi_empresa('Repetida','1710034065001','Ana',true,'2026-10-04','2026-10-04')",
+);
 await owner();
 const order = (
   await db.query(
@@ -272,11 +284,8 @@ assert.equal(
 );
 const C = "33333333-3333-4333-8333-333333333334";
 await owner();
-await db.query("insert into auth.users values($1,$2,$3)", [
-  C,
-  JSON.stringify({}),
-  "cami@ejemplo.com",
-]);
+// C no existe en auth.users ni tiene perfil: es un usuario recién registrado
+// en Clerk cuya empresa la crea la propia RPC crear_mi_empresa.
 await user(C);
 await rejects(
   "select public.crear_mi_empresa('OAuth sin aceptación','0999999999001','Cami',true)",

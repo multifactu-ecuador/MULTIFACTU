@@ -3794,3 +3794,17 @@ button.secondary:disabled { opacity: 0.5; cursor: not-allowed; }
 .rufo-panel .eyebrow {
   color: #e5432f;
 }
+
+/* Botones con estética de enlace en cabeceras (SignInButton/SignUpButton) */
+button.text-link {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  cursor: pointer;
+  font-family: inherit;
+}
+button.button {
+  font-family: inherit;
+  cursor: pointer;
+}

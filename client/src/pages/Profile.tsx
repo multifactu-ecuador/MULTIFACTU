@@ -33,7 +33,7 @@ type RucLookup = {
 };
 
 export default function Profile() {
-  const { access, refresh, allowed } = useAuth();
+  const { access, refresh, allowed, session } = useAuth();
   const [error, setError] = useState(""),
     [message, setMessage] = useState(""),
     [busy, setBusy] = useState(false),
@@ -115,14 +115,13 @@ export default function Profile() {
           .eq("id", access!.tenant_id),
       );
       if (personalName.trim() && personalName.trim() !== access!.nombre) {
-        const sess = (await db().auth.getSession()).data.session;
-        if (sess)
-          check(
-            await (db() as any)
-              .from("usuarios_perfiles")
-              .update({ nombre: personalName.trim() })
-              .eq("id", sess.user.id),
-          );
+        if (!session) throw Error("Sesión expirada.");
+        check(
+          await (db() as any)
+            .from("usuarios_perfiles")
+            .update({ nombre: personalName.trim() })
+            .eq("id", session.user.id),
+        );
       }
       await refresh();
       setMessage("Información empresarial actualizada.");

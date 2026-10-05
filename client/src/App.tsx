@@ -25,7 +25,6 @@ import Legal from "./pages/Legal";
 import Privacy from "./pages/Privacy";
 import DataProcessingAgreement from "./pages/DataProcessingAgreement";
 import RentalInfo from "./pages/RentalInfo";
-import AuthConfirm from "./pages/AuthConfirm";
 import Security from "./pages/Security";
 import Cookies from "./pages/Cookies";
 import PoliticaSeguridad from "./pages/PoliticaSeguridad";
@@ -53,7 +52,6 @@ export default function App() {
           <Route path="/cumplimiento-legal" element={<CumplimientoLegal />} />
           <Route path="/facturacion-electronica" element={<ElectronicInvoicing />} />
           <Route path="/inteligencia-negocios" element={<BusinessIntelligence />} />
-          <Route path="/auth/confirm" element={<AuthConfirm />} />
           <Route path="/cotizacion/:token" element={<QuotePublic />} />
           <Route element={<ProtectedRoute />}>
             <Route path="/onboarding" element={<Onboarding />} />

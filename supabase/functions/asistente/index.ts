@@ -5,6 +5,7 @@
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2.117.2";
 import { CONOCIMIENTO_SISTEMA, preguntarNvidia } from "../_shared/system-knowledge.ts";
 import { guardar } from "../_shared/guard.ts";
+import { verificarEntorno } from "../_shared/verificar.ts";
 import {
   memoriaTexto,
   proponerHallazgos,
@@ -331,7 +332,7 @@ Deno.serve(async (req) => {
   });
 
   // Denegar por defecto + sesión + rol ADMIN en un solo punto.
-  const ctx = await guardar(req, "/asistente", cors, admin);
+  const ctx = await guardar(req, "/asistente", cors, verificarEntorno);
   if (ctx instanceof Response) return ctx;
 
   let body: Record<string, unknown> | null = null;

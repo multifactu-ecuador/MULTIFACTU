@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { LockKeyhole } from "lucide-react";
 import QRCode from "qrcode";
-import { db, check, money, sriRealListo } from "../lib/supabase";
+import { db, check, getSupabaseToken, money, sriRealListo } from "../lib/supabase";
 import { useAuth } from "../auth/AuthContext";
 import type { CreditNote, Invoice } from "../lib/types";
 
@@ -148,10 +148,10 @@ export default function Documents() {
     }, 350);
   }
   async function downloadRide(id: string) {
-    const {
-      data: { session },
-    } = await db().auth.getSession();
-    if (!session) throw Error("Tu sesión venció. Inicia sesión nuevamente.");
+    // Token de la sesión de Clerk (mismo JWT que supabase-js adjunta a
+    // cada llamada): la Edge Function lo valida como Bearer.
+    const token = await getSupabaseToken();
+    if (!token) throw Error("Tu sesión venció. Inicia sesión nuevamente.");
 
     const baseUrl = import.meta.env.VITE_SUPABASE_URL?.replace(/\/$/, "");
     const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -160,7 +160,7 @@ export default function Documents() {
     const response = await fetch(`${baseUrl}/functions/v1/generar-ride`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${session.access_token}`,
+        Authorization: `Bearer ${token}`,
         apikey: publishableKey,
         "Content-Type": "application/json",
       },

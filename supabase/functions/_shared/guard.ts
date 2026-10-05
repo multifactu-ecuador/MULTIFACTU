@@ -4,13 +4,14 @@
 // responde 403 ANTES de tocar cuerpo, BD o secretos. La lista RUTAS es la
 // única fuente de verdad sobre quién puede llamar a qué y con qué nivel:
 //   publico – sin sesión (asistente web); exige Origin == APP_ORIGIN.
-//   usuario – JWT de Supabase válido + empresa asignada.
+//   usuario – JWT válido (Supabase Auth o Clerk) + empresa asignada.
 //   admin   – idem usuario + rol ADMIN.
 //   cron    – secreto compartido x-cron-secret (GitHub Actions).
 //   webhook – secreto x-webhook-secret >= 32 caracteres (webhooks SRI).
 //
-// El guard NO importa ningún módulo: cada function inyecta su cliente
-// admin (ya creado para su lógica de negocio). Así este archivo se puede
+// El guard NO importa ningún módulo: cada function inyecta su verificador
+// (_shared/verificar.ts, que delega la firma del JWT en PostgREST porque
+// auth.getUser() no resuelve tokens de Clerk). Así este archivo se puede
 // importar y testear directamente en Node (tests/seguridad.test.ts).
 //
 // Nota dev: si APP_ORIGIN no coincide con el origen del navegador
@@ -25,11 +26,17 @@ export interface Ctx {
   uid: string;
 }
 
-/** Mínima superficie del cliente Supabase que usa el guard (inyectada). */
-export interface Admin {
-  auth: { getUser(token: string): Promise<any> };
-  from(table: string): any;
-}
+/** Resultado de verificar un JWT: o la firma no passa, o passa y el
+ *  filtro RLS decide si hay perfil (null = sin empresa asignada). */
+export type Verificacion =
+  | { tokenValido: false }
+  | {
+      tokenValido: true;
+      perfil: { id: string; tenant_id: string; rol: string } | null;
+    };
+
+/** Verificador inyectado por cada function (ver _shared/verificar.ts). */
+export type Verificador = (token: string) => Promise<Verificacion>;
 
 // REGISTRO ÚNICO: al añadir una function DEBE añadirse aquí, o el test
 // tests/seguridad.test.ts y esta función la bloquearán con 403.
@@ -64,7 +71,7 @@ export async function guardar(
   req: Request,
   ruta: string,
   cors: Record<string, string> = {},
-  admin?: Admin | null,
+  verificar?: Verificador | null,
 ): Promise<Ctx | Response> {
   const json = (data: unknown, status: number) =>
     new Response(JSON.stringify(data), {
@@ -112,22 +119,23 @@ export async function guardar(
     return { tenant: "", rol: "sistema", uid: "" };
   }
 
-  // 6) usuario/admin: sesión JWT + perfil; admin exige rol ADMIN.
+  // 6) usuario/admin: JWT verificado (PostgREST valida la firma, sea de
+  //    Supabase Auth o de Clerk) + perfil con RLS; admin exige rol ADMIN.
   const bearer = req.headers
     .get("authorization")
     ?.replace(/^Bearer\s+/i, "");
   if (!bearer) return json({ error: "Inicia sesión" }, 401);
-  if (!admin) return json({ error: "Servicio no configurado" }, 503);
-  const { data, error } = await admin.auth.getUser(bearer);
-  const usuario = data?.user;
-  if (error || !usuario) return json({ error: "Sesión inválida" }, 401);
-  const { data: perfil, error: perfilError } = await admin
-    .from("usuarios_perfiles")
-    .select("tenant_id,rol")
-    .eq("id", usuario.id)
-    .maybeSingle();
-  if (perfilError || !perfil) return json({ error: "Sin empresa asignada" }, 403);
+  if (!verificar) return json({ error: "Servicio no configurado" }, 503);
+  let visto: Verificacion;
+  try {
+    visto = await verificar(bearer);
+  } catch {
+    return json({ error: "Sesión inválida" }, 401);
+  }
+  if (!visto.tokenValido) return json({ error: "Sesión inválida" }, 401);
+  const perfil = visto.perfil;
+  if (!perfil) return json({ error: "Sin empresa asignada" }, 403);
   if (nivel === "admin" && perfil.rol !== "ADMIN")
     return json({ error: "Requiere administrador" }, 403);
-  return { tenant: perfil.tenant_id, rol: perfil.rol, uid: usuario.id };
+  return { tenant: perfil.tenant_id, rol: perfil.rol, uid: perfil.id };
 }

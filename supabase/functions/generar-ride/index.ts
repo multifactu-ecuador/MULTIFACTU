@@ -1,6 +1,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { generateRidePdf } from "../_shared/ride-pdf.ts";
 import { guardar } from "../_shared/guard.ts";
+import { verificarEntorno } from "../_shared/verificar.ts";
 
 const origin = Deno.env.get("APP_ORIGIN")?.replace(/\/$/, "");
 const corsHeaders = {
@@ -48,7 +49,7 @@ Deno.serve(async (req) => {
   const supabase = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
 
   // Denegar por defecto: origen, método y sesión de usuario en un solo punto.
-  const ctx = await guardar(req, "/generar-ride", corsHeaders, supabase);
+  const ctx = await guardar(req, "/generar-ride", corsHeaders, verificarEntorno);
   if (ctx instanceof Response) return ctx;
 
   const body = await req.json().catch(() => null) as { id?: unknown } | null;

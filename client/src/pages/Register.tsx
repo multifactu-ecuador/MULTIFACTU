@@ -1,98 +1,16 @@
-﻿import { useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { db, configured, check } from "../lib/supabase";
-import { validarIdentificacion } from "../../../shared/identity.ts";
+﻿import { Link } from "react-router-dom";
+import { SignUp } from "@clerk/react";
+import { configured } from "../lib/supabase";
 import Brand from "../components/Brand";
-import { PRIVACY_VERSION, TERMS_VERSION } from "../lib/legal";
 
+/**
+ * El alta en sí la hace Clerk (correo + contraseña, con su verificación).
+ * Los datos de negocio (empresa, cédula) y los consentimientos legales con
+ * sus versiones NO se recolectan aquí: se recogen y guardan en /onboarding
+ * mediante la RPC crear_mi_empresa, que ProtectedRoute exige a todo usuario
+ * sin perfil/empresa.
+ */
 export default function Register() {
-  const [busy, setBusy] = useState(false),
-    [error, setError] = useState(""),
-    [done, setDone] = useState(false),
-    [pendingEmail, setPendingEmail] = useState(""),
-    [resendBusy, setResendBusy] = useState(false),
-    [resendMessage, setResendMessage] = useState(""),
-    [resendAvailable, setResendAvailable] = useState(true),
-    [identification, setIdentification] = useState(""),
-    [legalAccepted, setLegalAccepted] = useState(false);
-  const navigate = useNavigate();
-  const validation = identification
-    ? validarIdentificacion(
-        identification.length === 10 ? "05" : "04",
-        identification,
-      )
-    : null;
-
-  const confirmationRedirect = () =>
-    new URL("/auth/confirm", window.location.origin).toString();
-
-  async function submit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    if (!validation?.valid) {
-      setError("Revisa la cédula o RUC");
-      return;
-    }
-    if (!legalAccepted) {
-      setError("Debes aceptar los Términos y la Política de privacidad.");
-      return;
-    }
-    const values = new FormData(e.currentTarget);
-    const email = String(values.get("email")).trim().toLowerCase();
-    setBusy(true);
-    setError("");
-    try {
-      const data = check(
-        await db().auth.signUp({
-          email,
-          password: String(values.get("password")),
-          options: {
-            emailRedirectTo: confirmationRedirect(),
-            data: {
-              empresa: String(values.get("empresa")),
-              nombre: String(values.get("nombre")),
-              identificacion: identification,
-              consentimiento: true,
-              version_terminos: TERMS_VERSION,
-              version_privacidad: PRIVACY_VERSION,
-            },
-          },
-        }),
-      );
-      if (data.session) navigate("/app");
-      else {
-        setPendingEmail(email);
-        setDone(true);
-      }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "No se pudo crear tu negocio");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function resendConfirmation() {
-    if (!pendingEmail || !resendAvailable) return;
-    setResendBusy(true);
-    setError("");
-    setResendMessage("");
-    try {
-      check(
-        await db().auth.resend({
-          type: "signup",
-          email: pendingEmail,
-          options: { emailRedirectTo: confirmationRedirect() },
-        }),
-      );
-      setResendMessage("Enviamos otro enlace. Revisa tu bandeja de entrada y la carpeta de spam.");
-      setResendAvailable(false);
-      window.setTimeout(() => setResendAvailable(true), 60_000);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "No se pudo reenviar el correo");
-    } finally {
-      setResendBusy(false);
-    }
-  }
-
   return (
     <div className="auth-page">
       <header>
@@ -129,141 +47,35 @@ export default function Register() {
         <section className="auth-card">
           <span className="pill">7 DÍAS · PLAN LUXURY</span>
           <h2>Crea tu cuenta</h2>
-          {done ? (
-            <div className="notice" role="status">
-              <h3>Revisa tu correo</h3>
-              <p>
-                Enviamos el enlace de confirmación a <b>{pendingEmail}</b>.
-                Revisa también la carpeta de spam. Confirma tu correo antes de
-                entrar.
-              </p>
-              {resendMessage && <p role="status">{resendMessage}</p>}
-              {error && <p role="alert" className="error">{error}</p>}
-              <button
-                type="button"
-                className="secondary"
-                disabled={resendBusy || !resendAvailable}
-                onClick={() => void resendConfirmation()}
-              >
-                {resendBusy
-                  ? "Reenviando..."
-                  : resendAvailable
-                    ? "Reenviar correo de confirmación"
-                    : "Espera un minuto para reenviar"}
-              </button>
-              <Link to="/login">Ir a iniciar sesión</Link>
-            </div>
-          ) : (
-            <>
-              {!configured && (
-                <p className="notice">
-                  Configura Supabase para registrar cuentas reales. El
-                  formulario no crea usuarios ficticios.
-                </p>
-              )}
-              <form onSubmit={submit}>
-                <label>
-                  Nombre completo
-                  <input
-                    name="nombre"
-                    autoComplete="name"
-                    required
-                    minLength={2}
-                    maxLength={100}
-                  />
-                </label>
-                <label>
-                  Nombre de la empresa
-                  <input
-                    name="empresa"
-                    autoComplete="organization"
-                    required
-                    minLength={2}
-                    maxLength={160}
-                  />
-                </label>
-                <label>
-                  Cédula o RUC
-                  <input
-                    value={identification}
-                    onChange={(e) =>
-                      setIdentification(e.target.value.replace(/\D/g, ""))
-                    }
-                    name="identificacion"
-                    inputMode="numeric"
-                    required
-                    minLength={10}
-                    maxLength={13}
-                  />
-                </label>
-                {validation && !validation.valid && (
-                  <small className="error">Revisa la identificación.</small>
-                )}
-                {validation?.warning && <small>{validation.warning}</small>}
-                <label>
-                  Correo electrónico
-                  <input
-                    name="email"
-                    type="email"
-                    autoComplete="email"
-                    required
-                  />
-                </label>
-                <label>
-                  Contraseña
-                  <input
-                    name="password"
-                    type="password"
-                    autoComplete="new-password"
-                    required
-                    minLength={12}
-                    maxLength={128}
-                  />
-                </label>
-                <label className="checkbox">
-                  <input
-                    name="consent"
-                    type="checkbox"
-                    required
-                    checked={legalAccepted}
-                    onChange={(event) => setLegalAccepted(event.target.checked)}
-                  />
-                  <span>
-                    He leído y acepto los <Link to="/terminos">Términos de
-                    servicio</Link> y la <Link to="/privacidad">Política de
-                    privacidad</Link> de MULTIFACTU.
-                  </span>
-                </label>
-                {error && (
-                  <p role="alert" className="error">
-                    {error}
-                  </p>
-                )}
-                <button disabled={busy || !configured || !validation?.valid || !legalAccepted}>
-                  {busy
-                    ? "Creando tu empresa..."
-                    : "Crear cuenta · 7 días gratis"}
-                </button>
-              </form>
-              <p className="divider">o regístrate con</p>
-              <button
-                type="button"
-                className="google-btn"
-                disabled={!configured || !legalAccepted}
-                onClick={() =>
-                  void db().auth.signInWithOAuth({
-                    provider: "google",
-                    options: { redirectTo: confirmationRedirect() },
-                  })
-                }
-              >
-                Continuar con Google
-              </button>
-              {!legalAccepted && (
-                <small>Debes aceptar los Términos y la Política de privacidad para continuar.</small>
-              )}
-            </>
+          {!configured && (
+            <p className="notice">
+              Configura Supabase para registrar cuentas reales.
+            </p>
           )}
+          <div
+            style={{
+              width: "100%",
+              display: "flex",
+              justifyContent: "center",
+            }}
+          >
+            {/* routing="hash" mantiene la navegación de Clerk dentro del
+                fragmento de URL y evita choques con React Router en
+                /registro. El usuario cae en /onboarding, donde se completan
+                empresa, cédula y consentimientos. */}
+            <SignUp
+              routing="hash"
+              fallbackRedirectUrl="/onboarding"
+              signInUrl="/login"
+            />
+          </div>
+          <small>
+            Al crear tu cuenta aceptas los{" "}
+            <Link to="/terminos">Términos de servicio</Link> y la{" "}
+            <Link to="/privacidad">Política de privacidad</Link>. La
+            confirmación de los consentimientos se completa en el siguiente
+            paso.
+          </small>
           <p>
             ¿Ya tienes cuenta? <Link to="/login">Inicia sesión</Link>
           </p>

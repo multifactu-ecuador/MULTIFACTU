@@ -5,6 +5,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2.117.2";
 import { verificarCertificadoP12 } from "../_shared/p12-check.ts";
 import { guardar } from "../_shared/guard.ts";
+import { verificarEntorno } from "../_shared/verificar.ts";
 
 const MAX_INTENTOS = 10;
 const VENTANA_MINUTOS = 15;
@@ -39,7 +40,7 @@ Deno.serve(async (req) => {
   });
 
   // Denegar por defecto: origen, método, sesión y rol ADMIN en un solo punto.
-  const ctx = await guardar(req, "/verificar-p12", cors, admin);
+  const ctx = await guardar(req, "/verificar-p12", cors, verificarEntorno);
   if (ctx instanceof Response) return ctx;
   const tenant = ctx.tenant;
 

@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2.117.2";
 import { guardar } from "../_shared/guard.ts";
+import { verificarEntorno } from "../_shared/verificar.ts";
 
 const RUC = /^\d{13}$/;
 const HEADER_NAME = /^[A-Za-z0-9-]{1,64}$/;
@@ -130,7 +131,7 @@ Deno.serve(async (req) => {
     ? createClient(supabaseUrl, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } })
     : null;
   // Denegar por defecto: origen, método, sesión y rol ADMIN en un solo punto.
-  const ctx = await guardar(req, "/consultar-ruc", cors, admin);
+  const ctx = await guardar(req, "/consultar-ruc", cors, verificarEntorno);
   if (ctx instanceof Response) return ctx;
   if (!origin) return json({ error: "Servicio no configurado" }, 503);
   if (!provider) return json({ error: "Consulta fiscal no configurada" }, 503);

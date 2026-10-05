@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2.117.2";
 import { guardar } from "../_shared/guard.ts";
+import { verificarEntorno } from "../_shared/verificar.ts";
 import {
   PLAN_BASE,
   provider,
@@ -30,7 +31,7 @@ Deno.serve(async (req) => {
     auth: { persistSession: false, autoRefreshToken: false },
   });
   // Denegar por defecto: origen, método, sesión y rol ADMIN en un solo punto.
-  const ctx = await guardar(req, "/planes-pago", cors, admin);
+  const ctx = await guardar(req, "/planes-pago", cors, verificarEntorno);
   if (ctx instanceof Response) return ctx;
   const tenant = ctx.tenant;
   let activeOrder: string | undefined;

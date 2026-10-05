@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { RUTAS, guardar, type Admin } from "../supabase/functions/_shared/guard.ts";
+import { RUTAS, guardar, type Verificador } from "../supabase/functions/_shared/guard.ts";
 
 const raiz = join(dirname(fileURLToPath(import.meta.url)), "..");
 const ORIGEN = "https://multifactu.vercel.app";
@@ -28,31 +28,21 @@ const peticion = (
     headers: opciones.headers,
   });
 
-const admin = (
+// Mock del verificador: el token "valido" passa la firma (PostgREST) y su
+// perfil es el pedido; cualquier otro token no passa (401 Sesión inválida).
+const conSesion = (
   perfil: { tenant_id: string; rol: string } | null,
-): Admin => ({
-  auth: {
-    getUser: async (token: string) =>
-      token === "valido"
-        ? { data: { user: { id: "7a94ea41-4a9e-45e9-b331-50dbee47a279" } }, error: null }
-        : { data: { user: null }, error: { message: "jwt invalido" } },
-  },
-  from: () => ({
-    select: () => ({
-      eq: () => ({ maybeSingle: async () => ({ data: perfil, error: null }) }),
-    }),
-  }),
-});
+): Verificador =>
+  async (token) =>
+    token === "valido"
+      ? {
+          tokenValido: true,
+          perfil: perfil ? { id: "user_test", ...perfil } : null,
+        }
+      : { tokenValido: false };
 
-const adminQueFalla: Admin = {
-  auth: {
-    getUser: async () => {
-      throw new Error("no debería autenticar aquí");
-    },
-  },
-  from: () => {
-    throw new Error("no debería tocar la base de datos aquí");
-  },
+const verificadorQueFalla: Verificador = async () => {
+  throw new Error("no debería autenticar aquí");
 };
 
 const cuerpo = async (respuesta: Response) =>
@@ -88,7 +78,7 @@ test("una ruta fuera del registro se deniega sin tocar secretos ni la BD", async
     peticion("/inexistente"),
     "/inexistente",
     {},
-    adminQueFalla,
+    verificadorQueFalla,
   );
   assert.ok(respuesta instanceof Response);
   assert.equal(respuesta.status, 403);
@@ -114,7 +104,7 @@ test("un origen distinto de APP_ORIGIN se deniega con 403", async () => {
     peticion("/generar-ride", { headers: { origin: "https://atacante.ej" } }),
     "/generar-ride",
     {},
-    admin({ tenant_id: "t", rol: "ADMIN" }),
+    conSesion({ tenant_id: "t", rol: "ADMIN" }),
   );
   assert.ok(respuesta instanceof Response);
   assert.equal(respuesta.status, 403);
@@ -163,7 +153,7 @@ test("el nivel cron exige x-cron-secret", async () => {
 });
 
 test("el nivel usuario exige sesión; sin cliente no hay servicio", async () => {
-  const sinBearer = await guardar(peticion("/generar-ride"), "/generar-ride", {}, admin({ tenant_id: "t", rol: "ADMIN" }));
+  const sinBearer = await guardar(peticion("/generar-ride"), "/generar-ride", {}, conSesion({ tenant_id: "t", rol: "ADMIN" }));
   assert.ok(sinBearer instanceof Response);
   assert.equal(sinBearer.status, 401);
   assert.equal((await cuerpo(sinBearer)).error, "Inicia sesión");
@@ -179,7 +169,7 @@ test("el nivel usuario exige sesión; sin cliente no hay servicio", async () => 
     peticion("/generar-ride", { headers: { authorization: "Bearer caducado" } }),
     "/generar-ride",
     {},
-    admin({ tenant_id: "t", rol: "ADMIN" }),
+    conSesion({ tenant_id: "t", rol: "ADMIN" }),
   );
   assert.ok(sesionInvalida instanceof Response);
   assert.equal(sesionInvalida.status, 401);
@@ -191,7 +181,7 @@ test("un usuario con sesión y empresa recibe su tenant", async () => {
     peticion("/generar-ride", { headers: { authorization: "Bearer valido", origin: ORIGEN } }),
     "/generar-ride",
     {},
-    admin({ tenant_id: "13149458-4fc3-4a3e-a966-8e31fa277d42", rol: "ADMIN" }),
+    conSesion({ tenant_id: "13149458-4fc3-4a3e-a966-8e31fa277d42", rol: "ADMIN" }),
   );
   assert.ok(!(ctx instanceof Response));
   assert.equal(ctx.tenant, "13149458-4fc3-4a3e-a966-8e31fa277d42");
@@ -203,7 +193,7 @@ test("sin empresa asignada no hay acceso", async () => {
     peticion("/generar-ride", { headers: { authorization: "Bearer valido" } }),
     "/generar-ride",
     {},
-    admin(null),
+    conSesion(null),
   );
   assert.ok(respuesta instanceof Response);
   assert.equal(respuesta.status, 403);
@@ -215,7 +205,7 @@ test("el nivel admin exige rol ADMIN", async () => {
     peticion("/planes-pago", { headers: { authorization: "Bearer valido" } }),
     "/planes-pago",
     {},
-    admin({ tenant_id: "t", rol: "EMPLEADO" }),
+    conSesion({ tenant_id: "t", rol: "EMPLEADO" }),
   );
   assert.ok(respuesta instanceof Response);
   assert.equal(respuesta.status, 403);
@@ -225,7 +215,7 @@ test("el nivel admin exige rol ADMIN", async () => {
     peticion("/verificar-p12", { headers: { authorization: "Bearer valido" } }),
     "/verificar-p12",
     {},
-    admin({ tenant_id: "t", rol: "ADMIN" }),
+    conSesion({ tenant_id: "t", rol: "ADMIN" }),
   );
   assert.ok(!(ok instanceof Response));
   assert.equal(ok.rol, "ADMIN");

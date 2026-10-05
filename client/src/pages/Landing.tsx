@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/react";
 import {
   ArrowUpRight,
   Check,
@@ -80,12 +81,21 @@ export default function Landing() {
           <a href="#planes">Planes</a>
         </nav>
         <div>
-          <Link className="text-link" to="/login">
-            Iniciar sesión
-          </Link>
-          <Link className="button light" to="/registro">
-            Crear cuenta gratis ↗
-          </Link>
+          <Show when="signed-out">
+            <SignInButton mode="modal">
+              <button className="text-link" type="button">
+                Iniciar sesión
+              </button>
+            </SignInButton>
+            <SignUpButton mode="modal">
+              <button className="button light" type="button">
+                Crear cuenta gratis ↗
+              </button>
+            </SignUpButton>
+          </Show>
+          <Show when="signed-in">
+            <UserButton />
+          </Show>
         </div>
       </header>
       <main>

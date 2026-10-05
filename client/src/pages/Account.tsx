@@ -1,10 +1,12 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Pencil, Camera, Eye, EyeOff } from "lucide-react";
+import { useReverification, useUser } from "@clerk/react";
 import { db, check } from "../lib/supabase";
 import { useAuth } from "../auth/AuthContext";
 
 export default function Account() {
   const { access, session, refresh } = useAuth();
+  const { user } = useUser();
   const [error, setError] = useState(""),
     [message, setMessage] = useState(""),
     [busy, setBusy] = useState(false),
@@ -15,6 +17,17 @@ export default function Account() {
     [nueva, setNueva] = useState(""),
     [verActual, setVerActual] = useState(false),
     [verNueva, setVerNueva] = useState(false);
+
+  // Cambio de contraseña vía Clerk (equivalente al antiguo re-auth +
+  // updateUser de Supabase Auth): Clerk valida la contraseña actual y
+  // guarda la nueva. useReverification abre la verificación de identidad
+  // de Clerk si la cuenta lo requiere (política del dashboard).
+  const guardarPassword = useReverification(
+    async (currentPassword: string, newPassword: string) => {
+      if (!user) throw Error("No se pudo verificar tu cuenta.");
+      await user.updatePassword({ currentPassword, newPassword });
+    },
+  );
 
   const email = session?.user.email ?? "";
 
@@ -46,9 +59,8 @@ export default function Account() {
     setError("");
     setMessage("");
     try {
-      const sess = (await db().auth.getSession()).data.session;
-      if (!sess) throw Error("Sesión expirada.");
-      const path = `${access!.tenant_id}/${sess.user.id}.${
+      if (!session) throw Error("Sesión expirada.");
+      const path = `${access!.tenant_id}/${session.user.id}.${
         file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg"
       }`;
       const anterior = access?.avatar_path ?? null;
@@ -63,7 +75,7 @@ export default function Account() {
           await (db() as any)
             .from("usuarios_perfiles")
             .update({ avatar_path: path })
-            .eq("id", sess.user.id),
+            .eq("id", session.user.id),
         );
       } catch (e) {
         if (anterior !== path) await db().storage.from("avatares").remove([path]);
@@ -90,13 +102,12 @@ export default function Account() {
     setError("");
     setMessage("");
     try {
-      const sess = (await db().auth.getSession()).data.session;
-      if (!sess) throw Error("Sesión expirada.");
+      if (!session) throw Error("Sesión expirada.");
       check(
         await (db() as any)
           .from("usuarios_perfiles")
           .update({ nombre: nombre.trim(), telefono: telefono.trim() || null })
-          .eq("id", sess.user.id),
+          .eq("id", session.user.id),
       );
       await refresh();
       setMessage("Datos personales actualizados.");
@@ -109,21 +120,16 @@ export default function Account() {
 
   async function cambiarPassword(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (nueva.length < 6) {
-      setError("La nueva contraseña debe tener al menos 6 caracteres.");
+    if (nueva.length < 8) {
+      setError("La nueva contraseña debe tener al menos 8 caracteres.");
       return;
     }
     setBusy(true);
     setError("");
     setMessage("");
     try {
-      if (!email) throw Error("No se pudo verificar el correo de la cuenta.");
-      const reauth = await db().auth.signInWithPassword({
-        email,
-        password: actual,
-      });
-      if (reauth.error) throw Error("La contraseña actual no es correcta.");
-      check(await db().auth.updateUser({ password: nueva }));
+      if (!actual) throw Error("Escribe tu contraseña actual.");
+      await guardarPassword(actual, nueva);
       setActual("");
       setNueva("");
       setMessage("Contraseña actualizada correctamente.");
@@ -238,7 +244,8 @@ export default function Account() {
               onChange={(event) => setNueva(event.target.value)}
               autoComplete="new-password"
               required
-              minLength={6}
+              minLength={8}
+              maxLength={128}
               disabled={busy}
             />
             <button
@@ -251,11 +258,11 @@ export default function Account() {
             </button>
           </span>
         </label>
-        <button disabled={busy || !actual || !nueva}>
+        <button disabled={busy || !actual || !nueva || nueva.length < 8}>
           {busy ? "Guardando…" : "Guardar contraseña"}
         </button>
         <small style={{ gridColumn: "1 / -1" }}>
-          Mínimo 6 caracteres. Se verifica tu contraseña actual antes de
+          Mínimo 8 caracteres. Clerk verifica tu contraseña actual antes de
           cambiarla.
         </small>
       </form>
