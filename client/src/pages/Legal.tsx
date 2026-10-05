@@ -80,16 +80,21 @@ export default function Legal() {
           de pago ya causadas ni genera un reembolso de períodos efectivamente
           utilizados, salvo que la ley aplicable disponga otra cosa.
         </p>
-        <h2>6. Asistente de inteligencia artificial</h2>
+        <h2>6. RUFO, asistente de inteligencia artificial</h2>
         <p>
-          El asistente de IA responde consultas con base en los datos propios
-          del Cliente (ventas, cobros, inventario) y en el conocimiento del
-          funcionamiento de la plataforma. Las preguntas pueden ser procesadas
-          por un proveedor de inteligencia artificial (NVIDIA NIM) únicamente
-          para generar la respuesta; los datos del Cliente no se utilizan para
-          entrenar modelos ni se comparten con otras empresas. Las respuestas
-          son informativas y no sustituyen asesoría contable, tributaria o
-          legal profesional.
+          RUFO responde consultas con los datos del negocio del Cliente
+          (ventas, cobros, caja e inventario) y con el conocimiento de la
+          plataforma. Con esos mismos datos analiza periódicamente el negocio
+          y propone hallazgos —riesgos y oportunidades— que el Cliente
+          confirma o descarta, y guarda la memoria que autoriza (perfil y
+          hallazgos confirmados) junto con las valoraciones de respuestas.
+          Todo queda aislado por empresa: los datos de una cuenta no alimentan
+          a otra, no se usan para entrenar modelos ni se comparten. Las
+          preguntas pueden procesarse con un proveedor de IA (NVIDIA NIM)
+          únicamente para generar la respuesta. RUFO <b>sugiere, no decide</b>:
+          no emite comprobantes ni ejecuta acciones, y sus respuestas son
+          informativas, sin sustituir asesoría contable, tributaria o legal
+          profesional.
         </p>
         <h2>7. Datos personales y confidencialidad</h2>
         <p>

@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, Database, FileCheck2, KeyRound, Lock, ServerCog, ShieldCheck } from "lucide-react";
+import { ArrowRight, Brain, Database, FileCheck2, Gauge, KeyRound, Lock, ServerCog, ShieldCheck, Webhook, Workflow } from "lucide-react";
 import Brand from "../components/Brand";
 
 const controls = [
@@ -9,6 +9,10 @@ const controls = [
   { icon: Database, title: "Información con controles de acceso", text: "Clientes, comprobantes, inventario y finanzas se relacionan con tu empresa. Las operaciones de dinero usan tokens idempotentes: ni un doble clic ni una recarga duplican cobros." },
   { icon: ServerCog, title: "Procesos sensibles fuera del navegador", text: "El navegador nunca recibe contraseñas de certificados, archivos .p12 ni claves. Firma, verificación y envío al SRI ocurren en funciones privadas del servidor con límites anti fuerza-bruta." },
   { icon: FileCheck2, title: "Validaciones antes de firmar", text: "Antes de firmar se comprueba que la contraseña abra el certificado, que esté vigente y que su RUC o cédula corresponda a tu empresa." },
+  { icon: Brain, title: "IA por empresa, memoria aislada", text: "RUFO sólo lee los datos de tu empresa: su memoria y sus hallazgos viven separados por empresa en la base de datos, los confirmas tú y jamás se usan para entrenar modelos ni alimentan a otras cuentas." },
+  { icon: Gauge, title: "Límites en cada función", text: "Cada endpoint valida origen, sesión, rol y secreto antes de responder, con cupo de intentos en firma, emisiones y consultas: ni fuerza bruta ni abuso de la API." },
+  { icon: Workflow, title: "Seguridad auditada en cada cambio", text: "Cada actualización pasa pruebas automáticas de base de datos y una auditoría de dependencias con alertas de seguridad; las vulnerabilidades conocidas se revisan con fecha límite." },
+  { icon: Webhook, title: "Eventos firmados y tareas protegidas", text: "Los webhooks y tareas automáticas exigen un secreto compartido: nada entra al sistema sin validarse y los intentos quedan registrados." },
 ];
 
 export default function Security() {
@@ -35,13 +39,14 @@ export default function Security() {
         <div className="info-section-heading"><p className="eyebrow">CATÁLOGO DE SEGURIDAD</p><h2>Cómo protegemos cada parte del sistema.</h2></div>
         <div className="security-grid">{controls.map(({ icon: Icon, title, text }) => <article key={title}><Icon size={25} /><h3>{title}</h3><p>{text}</p></article>)}</div>
       </section>
-      <section className="info-banner"><ShieldCheck size={28} /><div><h2>Seguridad verificable, no promesas vacías.</h2><p>Nunca compartas la contraseña de tu firma por WhatsApp ni correo: cárgala solo desde «Mi empresa» y verifícala con el botón correspondiente. El asistente de IA procesa tus preguntas de forma segura: los datos de tu empresa jamás se usan para entrenar modelos ni se comparten con otras cuentas.</p></div></section>
+      <section className="info-banner"><ShieldCheck size={28} /><div><h2>Seguridad verificable, no promesas vacías.</h2><p>Cada función del servidor valida origen, sesión y rol antes de responder; la firma electrónica jamás sale de procesos privados y su contraseña vive cifrada en Vault. RUFO, el asistente de IA, trabaja solo con los datos de tu empresa —memoria que tú controlas—, nunca con los de otras cuentas ni para entrenar modelos. Nunca compartas la contraseña de tu firma por WhatsApp ni correo: cárgala solo desde «Mi empresa» y verifícala con el botón correspondiente.</p></div></section>
       <section className="info-section info-faq">
         <p className="eyebrow">PREGUNTAS FRECUENTES</p>
         <div>
           <article><h3>¿Otra empresa puede ver mis comprobantes?</h3><p>No. Los datos se consultan dentro del espacio de la empresa autenticada.</p></article>
           <article><h3>¿Dónde se usa mi firma electrónica?</h3><p>Solo en el proceso privado de firmado cuando habilitas el flujo fiscal real; no se entrega al navegador.</p></article>
           <article><h3>¿Qué debo hacer si cambia mi certificado?</h3><p>Actualízalo desde la configuración de la empresa antes de que venza y confirma que el RUC del certificado sea el correcto.</p></article>
+          <article><h3>¿RUFO aprende de otros usuarios?</h3><p>No. Sus recuerdos y hallazgos son de tu empresa, se confirman manualmente y no se usan para entrenar modelos ni se comparten entre cuentas.</p></article>
         </div>
       </section>
     </main>

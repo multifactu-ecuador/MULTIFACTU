@@ -37,7 +37,9 @@ export default function DataProcessingAgreement() {
           El encargo comprende el alojamiento, consulta, organización,
           mantenimiento, soporte y, cuando sea configurado por el Responsable,
           procesamiento de operaciones de ventas, facturación, inventario,
-          alquileres, finanzas y reportes dentro de MULTIFACTU. Rige durante la
+          alquileres, finanzas y reportes, así como del asistente RUFO
+          (consultas, cifras agregadas, memoria y hallazgos confirmados por el
+          Responsable), dentro de MULTIFACTU. Rige durante la
           relación de servicio y hasta completar la devolución o eliminación
           acordada, sin perjuicio de las obligaciones legales de conservación.
         </p>
@@ -78,11 +80,15 @@ export default function DataProcessingAgreement() {
           El Encargado aplicará medidas técnicas, administrativas,
           organizativas y jurídicas apropiadas al riesgo, mantendrá la
           confidencialidad de las personas autorizadas y limitará el acceso a lo
-          necesario para el servicio. Las medidas incluyen controles de
-          autenticación, roles, aislamiento por empresa y protección de
-          archivos privados conforme a la configuración del servicio. El
-          Responsable reconoce que debe administrar de forma segura sus propias
-          credenciales y permisos.
+          necesario para el servicio. Las medidas incluyen autenticación con
+          contraseñas mínimas, roles ADMIN/CAJERO, aislamiento por empresa
+          (Row Level Security) aplicado también a la memoria y los hallazgos
+          del asistente, validación centralizada de origen, sesión, rol y
+          secretos en cada función del servidor, límites de intentos, cifrado
+          en tránsito (TLS), archivos privados, cifrado de la contraseña .p12
+          con Supabase Vault y auditoría automática de dependencias en cada
+          actualización. El Responsable reconoce que debe administrar de forma
+          segura sus propias credenciales y permisos.
         </p>
 
         <h2>7. Subencargados y transferencias</h2>
@@ -94,7 +100,7 @@ export default function DataProcessingAgreement() {
         <ul>
           <li><b>Supabase Inc.</b> (EE.UU.): autenticación, base de datos PostgreSQL, almacenamiento y funciones de servidor.</li>
           <li><b>Vercel Inc.</b> (EE.UU.): alojamiento de la aplicación web.</li>
-          <li><b>NVIDIA Corp.</b> (NIM, EE.UU.): procesamiento puntual de las preguntas del asistente de IA para generar respuestas, sin usar los datos para entrenar modelos.</li>
+          <li><b>NVIDIA Corp.</b> (NIM, EE.UU.): procesamiento puntual de las preguntas del asistente RUFO con el contexto necesario (cifras agregadas y memoria del asistente) para generar respuestas, sin usar los datos para entrenar modelos.</li>
           <li><b>PayPhone</b> (Ecuador): procesamiento de pagos de los planes contratados.</li>
         </ul>
         <p>

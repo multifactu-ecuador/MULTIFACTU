@@ -300,17 +300,17 @@ export default function Landing() {
               {
                 icon: Sparkles,
                 title: "Asistente de reportes",
-                text: "Pregunta en español simple: cuánto vendiste, quién te debe más, qué producto se mueve menos. Respuesta instantánea con tus datos.",
+                text: "Pregunta en español y respóndete al instante: ventas, deudores, caja.",
               },
               {
                 icon: CalendarDays,
                 title: "Facturación programada con IA",
-                text: "Agenda una vez y la IA emite tus facturas recurrentes en la fecha exacta, con tus precios y tu catálogo.",
+                text: "Agenda una vez; la IA emite tus facturas recurrentes en la fecha exacta.",
               },
               {
                 icon: BadgeCheck,
                 title: "Verificación inteligente",
-                text: "Tu firma electrónica y contraseña se validan contra tu certificado real: caducidad y RUC incluidos antes de firmar.",
+                text: "Valida tu firma electrónica y su vigencia antes de firmar.",
               },
             ].map(({ icon: Icon, title, text }, i) => (
               <article key={title}>
@@ -323,34 +323,33 @@ export default function Landing() {
           </div>
         </section>
         <section className="marketing-section rufo-section" id="rufo">
-          <p className="eyebrow">RUFO · BENEFICIOS DE NUESTRA IA</p>
+          <img className="rufo-logo" src="/brands/rufo-ia-blanco.png" alt="RUFO IA" />
+          <p className="eyebrow">TU ASISTENTE IA</p>
           <h2>
             RUFO aprende
             <br />
             de tu negocio.
           </h2>
           <p className="rufo-intro">
-            No es un chatbot genérico: lee las cifras reales de tu empresa, te
-            responde en español al instante y, con el tiempo, aprende de lo que
-            pasa en tu negocio —de tu empresa y de ninguna otra— para ayudarte a
-            decidir mejor.
+            Responde al instante con tus cifras y cada semana te propone qué
+            revisar. Tú decides.
           </p>
           <div className="module-grid">
             {[
               {
                 icon: Brain,
-                title: "Responde con tus números",
-                text: "Pregunta en español simple —«¿cuánto vendí este mes?», «quién me debe más?»— y responde al instante con tus facturas, cobros, caja e inventario reales.",
+                title: "Te responde al instante",
+                text: "Pregunta en español: ventas, deudores, caja e inventario reales.",
               },
               {
                 icon: Target,
-                title: "Aprende y te propone hallazgos",
-                text: "Cada semana analiza ventas, cobranza, stock y caja de tu empresa y te presenta riesgos y oportunidades con sus cifras, antes de que se te pasen.",
+                title: "Aprende cada semana",
+                text: "Analiza tus números y te propone riesgos y oportunidades.",
               },
               {
                 icon: Lock,
-                title: "Tú decides, él nunca decide por ti",
-                text: "Cada hallazgo lo confirmas o descartas con un clic y tu memoria es exclusiva de tu empresa: RUFO sugiere con opciones y números, pero no factura, cobra ni borra nada.",
+                title: "Tú decides",
+                text: "Confirmas o descartas cada hallazgo. Nunca factura ni cobra por ti.",
               },
             ].map(({ icon: Icon, title, text }, i) => (
               <article key={title}>
@@ -360,6 +359,12 @@ export default function Landing() {
                 <p>{text}</p>
               </article>
             ))}
+          </div>
+          <div className="rufo-cta">
+            <Link className="rufo-button" to="/registro">
+              Probar RUFO gratis <ArrowUpRight size={16} />
+            </Link>
+            <span className="rufo-nota">Sin tarjeta · 7 días completos</span>
           </div>
         </section>
         <section className="marketing-section plans-section" id="planes">

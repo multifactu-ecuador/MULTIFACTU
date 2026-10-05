@@ -144,11 +144,11 @@ export default function Assistant() {
 
   return (
     <section className="assistant">
-      <div className="page-heading">
+      <div className="assistant-hero">
+        <img src="/brands/rufo-ia-blanco.png" alt="RUFO IA" className="assistant-logo" />
         <div>
-          <p className="eyebrow">INTELIGENCIA / ASISTENTE</p>
           <h1>Pregúntale a tu negocio.</h1>
-          <p>Respuestas instantáneas con los datos reales de tu empresa.</p>
+          <p>Cifras reales de tu empresa. Lo que confirmas, lo recuerdo.</p>
         </div>
         <span className="pill pill-ia">
           <Sparkles size={13} /> Asistente IA

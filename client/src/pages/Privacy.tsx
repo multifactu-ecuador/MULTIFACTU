@@ -48,7 +48,12 @@ export default function Privacy() {
           Tratamos los datos para crear y administrar la cuenta, prestar el
           servicio contratado, autenticar accesos, atender soporte, prevenir
           fraude e incidentes, cumplir obligaciones legales y comunicar cambios
-          relevantes del servicio. Cuando el tratamiento se realice por cuenta
+          relevantes del servicio. Cuando se usa el asistente RUFO se tratan
+          cifras agregadas del negocio, la memoria creada por el Cliente
+          (perfil y hallazgos confirmados) y las valoraciones de respuestas,
+          con la única finalidad de responder consultas y preparar análisis
+          para ese Cliente; el Cliente puede borrar esa memoria en cualquier
+          momento. Cuando el tratamiento se realice por cuenta
           del Cliente, seguimos sus instrucciones documentadas y no utilizamos
           esos datos para finalidades propias incompatibles. El consentimiento
           se solicita cuando sea la base aplicable; la ejecución del contrato,
@@ -64,7 +69,7 @@ export default function Privacy() {
         <ul>
           <li><b>Supabase Inc.</b> (EE.UU.): autenticación, base de datos PostgreSQL, almacenamiento de archivos y funciones de servidor.</li>
           <li><b>Vercel Inc.</b> (EE.UU.): alojamiento de la aplicación web.</li>
-          <li><b>NVIDIA Corp.</b> (NIM, EE.UU.): procesamiento de las preguntas del asistente de IA para generar respuestas; no se envían bases de datos completas ni se usan los datos para entrenar modelos.</li>
+          <li><b>NVIDIA Corp.</b> (NIM, EE.UU.): procesamiento puntual de las preguntas del asistente RUFO, junto con el contexto estrictamente necesario (cifras agregadas y memoria del asistente), para generar la respuesta; no se envían bases de datos completas ni se usan los datos para entrenar modelos.</li>
           <li><b>PayPhone</b> (Ecuador): procesamiento de pagos de planes, cuando el Cliente compra.</li>
         </ul>
         <p>
@@ -99,13 +104,17 @@ export default function Privacy() {
           Aplicamos medidas técnicas y organizativas acordes al servicio:
           autenticación con contraseñas de mínimo 12 caracteres, controles de
           acceso por empresa y roles aplicados en la base de datos (Row Level
-          Security), aislamiento por inquilino, cifrado en tránsito (TLS),
-          almacenamiento privado para archivos, cifrado de la contraseña del
-          certificado .p12 con Supabase Vault y límites anti fuerza-bruta en
-          las funciones sensibles. Las preguntas al asistente de IA se procesan
-          de forma segura y no se comparten entre empresas. Ningún sistema
-          elimina todo riesgo: el Cliente debe proteger sus credenciales,
-          limitar los permisos de su equipo y reportar incidentes sin demora.
+          Security) —incluida la memoria y los hallazgos del asistente—,
+          aislamiento por inquilino, validación centralizada de origen, sesión
+          y rol en cada función del servidor, límites de intentos y secretos
+          compartidos firmados, cifrado en tránsito (TLS), almacenamiento
+          privado para archivos, cifrado de la contraseña del certificado .p12
+          con Supabase Vault y auditoría automática de dependencias con alertas
+          de seguridad en cada actualización. Las preguntas al asistente RUFO
+          se procesan de forma segura, no se comparten entre empresas ni se
+          usan para entrenar modelos. Ningún sistema elimina todo riesgo: el
+          Cliente debe proteger sus credenciales, limitar los permisos de su
+          equipo y reportar incidentes sin demora.
         </p>
 
         <h2>8. Derechos y consultas</h2>
@@ -113,7 +122,9 @@ export default function Privacy() {
           El titular puede ejercer los derechos reconocidos por la normativa
           aplicable, incluidos acceso, rectificación y actualización,
           eliminación, oposición, suspensión, portabilidad y no ser objeto de
-          decisiones automatizadas cuando correspondan. Para datos de cuenta,
+          decisiones automatizadas cuando correspondan. RUFO no toma decisiones
+          automatizadas ni ejecuta acciones: sólo propone y el Cliente decide;
+          ninguna sugerencia produce efectos por sí sola. Para datos de cuenta,
           escribe a <a href="mailto:Mulfactu@gmail.com">Mulfactu@gmail.com</a>. Para datos cargados por un Cliente,
           el titular debe dirigir inicialmente su solicitud a ese Cliente como
           responsable del tratamiento; MULTIFACTU le asistirá según el Contrato
