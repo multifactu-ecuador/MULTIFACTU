@@ -51,7 +51,10 @@ export default function PoliticaSeguridad() {
         <p>
           Cifrado en tránsito (TLS), almacenamiento de archivos privado y
           webhooks o tareas automáticas que exigen un secreto compartido: nada
-          entra al sistema sin validarse y los intentos quedan registrados.
+          entra al sistema sin validarse y los intentos quedan registrados. La
+          web se sirve además con cabeceras de seguridad —X-Content-Type-Options
+          y X-Frame-Options— que impiden la interpretación errónea de archivos y
+          que la aplicación sea embebida en otros sitios (clickjacking).
         </p>
 
         <h2>6. Seguridad del ciclo de desarrollo</h2>
