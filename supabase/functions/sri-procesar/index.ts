@@ -123,7 +123,7 @@ Deno.serve(async (req) => {
         Deno.env.get("SRI_SIMULATION_RESULT") !== "error",
       );
       result = r;
-      mensaje = "SIMULACIÓN: no firmada criptográficamente ni enviada al SRI";
+      mensaje = "No firmada criptográficamente ni enviada al SRI";
     }
     const { error: updateError } = await db
       .from("facturas_sri")
@@ -164,7 +164,7 @@ Deno.serve(async (req) => {
         id,
         error: error
           ? "No se pudo persistir el error; revisar factura"
-          : "Simulación fallida",
+          : "Error de emisión",
       },
       500,
     );

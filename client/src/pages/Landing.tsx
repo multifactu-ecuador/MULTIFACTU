@@ -28,7 +28,7 @@ export const plans = [
       "Inventario y productos",
       "Servicios y proformas",
       "Gestión de clientes",
-      "Nota de crédito de demostración",
+      "Nota de crédito",
       "Compartir comprobantes por WhatsApp/Correo",
     ],
   },
@@ -43,7 +43,7 @@ export const plans = [
       "Alquiler de maquinaria y herramientas",
       "Contratos y garantías",
       "Control de fechas y disponibilidad",
-      "Flujo de comprobantes para pruebas",
+      "Flujo completo de comprobantes",
     ],
     popular: true,
   },
@@ -358,8 +358,9 @@ export default function Landing() {
           <p className="scope-note">
             La emisión real se activa cuando tu empresa sube su firma
             electrónica (.p12), verifica su contraseña y completa sus datos
-            fiscales; mientras tanto el sistema opera en demostración
-            claramente identificada. MULTIFACTU no vende firmas electrónicas.
+            fiscales; mientras tanto la emisión está en fase de validación y
+            los comprobantes no tienen validez tributaria hasta activar el SRI
+            real. MULTIFACTU no vende firmas electrónicas.
           </p>
           <div className="compare-wrap">
             <table className="compare-table">

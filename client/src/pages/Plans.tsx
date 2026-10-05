@@ -140,7 +140,7 @@ export default function Plans() {
             {order.estado === "PAGADO"
               ? "Plan activado"
               : order.modo === "demo"
-                ? "Pedido de demostración"
+                ? "Pedido registrado"
                 : "Tu pedido de " + order.plan}
           </h2>
           <p>
@@ -180,9 +180,8 @@ export default function Plans() {
         </section>
       )}
       <small>
-        Los nuevos comprobantes SRI siguen siendo simulados en esta entrega;
-        contratar un plan no convierte una simulación en emisión tributaria
-        real.
+        La emisión está en fase de validación: sin validez tributaria hasta
+        activar el SRI real; contratar un plan no cambia ese estado.
       </small>
     </section>
   );

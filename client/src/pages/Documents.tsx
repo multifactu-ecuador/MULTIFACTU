@@ -121,7 +121,7 @@ export default function Documents() {
       <div><b>Cliente:</b> ${escapeHtml(cliente.nombre ?? "-")} · ${escapeHtml(cliente.identificacion ?? "-")}</div>
       <div><b>Factura:</b> ${escapeHtml(id.slice(0, 8))} · <b>Fecha:</b> ${escapeHtml(row.fecha)}</div>
       <div><b>Estado:</b> ${escapeHtml(row.estado)}</div>
-      <p><b>Clave de acceso:</b> ${escapeHtml((row as any).clave_acceso ?? "(simulada)")}</p>
+      <p><b>Clave de acceso:</b> ${escapeHtml((row as any).clave_acceso ?? "(pendiente)")}</p>
       <table><thead><tr><th>Detalle</th><th>Cant.</th><th>Precio</th><th>Base</th><th>IVA</th><th>Impuesto</th></tr></thead><tbody>${items}</tbody></table>
       <div class="totals">
         <b>Total sin IVA:</b> ${moneyNum(Number((row as any).subtotal_0) + Number((row as any).subtotal_5) + Number((row as any).subtotal_15))}<br/>
@@ -129,7 +129,7 @@ export default function Documents() {
         <b>Total:</b> ${moneyNum(row.total)}
       </div>
       ${(row as any).clave_acceso ? `<div style="text-align:center;margin-top:18px"><p><b>Clave de acceso:</b> ${escapeHtml((row as any).clave_acceso)}</p></div>` : ""}
-      <p style="margin-top:40px">Representación impresa del comprobante electrónico (RIDE).</p>
+      <p style="margin-top:40px">Representación impresa del comprobante electrónico (RIDE).${(row as any).simulacion ? " Emisión en fase de validación: sin validez tributaria hasta activar el SRI real." : ""}</p>
       <button onclick="window.print()">Imprimir</button>
       <script>setTimeout(()=>window.print(),350);</script>
     </body></html>`;
@@ -185,7 +185,7 @@ export default function Documents() {
     const url = URL.createObjectURL(blob),
       link = document.createElement("a");
     link.href = url;
-    link.download = "MULTIFACTU-simulacion-sin-validez.xml";
+    link.download = "MULTIFACTU-comprobante.xml";
     link.click();
     URL.revokeObjectURL(url);
   }
@@ -268,13 +268,13 @@ export default function Documents() {
           <p className="eyebrow">
             {realListo
               ? "COMPROBANTES / FACTURACIÓN REAL"
-              : "COMPROBANTES / DEMOSTRACIÓN"}
+              : "COMPROBANTES"}
           </p>
           <h1>Tu operación, ordenada.</h1>
           <p>
             {realListo
               ? "Tu empresa tiene sus documentos completos para emitir en modo real."
-              : "Los estados de esta versión son simulados y no prueban aceptación del SRI."}
+              : "Emisión en fase de validación: sin validez tributaria hasta activar el SRI real."}
           </p>
         </div>
         <button className="secondary" onClick={() => void load()}>
@@ -345,13 +345,19 @@ export default function Documents() {
                 <td>{money(Number(r.total))}</td>
                 <td>
                   <span className={r.simulacion && !realListo ? "pill" : "pill pill-real"}>
-                    {r.estado} · {r.simulacion ? "demo" : "SRI"}
+                    {r.simulacion ? r.estado : `${r.estado} · SRI`}
                   </span>
                 </td>
                 <td>
-                  {r.numero_autorizacion ??
-                    r.mensaje ??
-                    "Pendiente del webhook"}
+                  {r.simulacion ? (
+                    <span title="Sin validez tributaria hasta activar el SRI real">
+                      {r.estado === "Error" ? "Error de emisión" : "En validación"}
+                    </span>
+                  ) : (
+                    r.numero_autorizacion ??
+                      r.mensaje ??
+                      "Pendiente del webhook"
+                  )}
                 </td>
                 <td>
                   <button

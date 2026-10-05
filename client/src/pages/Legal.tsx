@@ -55,7 +55,8 @@ export default function Legal() {
           proporcionada por el Cliente. MULTIFACTU no declara afiliación,
           respaldo oficial ni garantía de autorización automática por parte
           del SRI. Mientras la configuración fiscal esté incompleta, las
-          operaciones se identifican como demostración sin validez tributaria.
+          operaciones quedan en fase de validación y carecen de validez
+          tributaria.
         </p>
         <h2>4. Cuenta, seguridad y responsabilidades del Cliente</h2>
         <p>

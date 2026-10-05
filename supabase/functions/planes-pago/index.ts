@@ -98,7 +98,7 @@ Deno.serve(async (req) => {
       if (order.modo === "demo")
         return json({
           order,
-          notice: "Demostración: no cobra ni activa una suscripción.",
+          notice: "Pedido sin cobro real: no activa una suscripción.",
         });
       if (order.estado !== "PENDIENTE") return json({ order });
       const token = Deno.env.get("PAYPHONE_TOKEN"),
@@ -171,7 +171,7 @@ Deno.serve(async (req) => {
       if (result.error) return json({ error: "Pedido no encontrado" }, 404);
       const order = result.data as PlanOrder;
       if (order.modo !== "payphone")
-        return json({ error: "Una simulación no puede activar un plan" }, 409);
+        return json({ error: "Un pedido sin cobro real no puede activar un plan" }, 409);
       if (order.aplicado_en) return json({ order });
       const token = Deno.env.get("PAYPHONE_TOKEN");
       if (!token) return json({ error: "Proveedor sin configurar" }, 503);

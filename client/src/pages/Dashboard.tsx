@@ -65,7 +65,7 @@ export default function Dashboard() {
               {invoices.slice(0, 8).map((i) => (
                 <tr key={i.id}>
                   <td>{String(i.fecha).slice(0, 10)}</td>
-                  <td>{i.numero_autorizacion ? i.numero_autorizacion.slice(0, 8) : i.id.slice(0, 8)}</td>
+                  <td>{!i.simulacion && i.numero_autorizacion ? i.numero_autorizacion.slice(0, 8) : i.id.slice(0, 8)}</td>
                   <td>{i.estado}</td>
                   <td>{money(Number(i.total))}</td>
                 </tr>

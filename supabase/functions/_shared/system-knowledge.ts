@@ -38,7 +38,7 @@ Sistema web multiempresa: cada negocio tiene sus datos aislados. Incluye punto d
 
 == FACTURACIÓN ELECTRÓNICA SRI (Ecuador) ==
 - La clave de acceso es de 49 dígitos (módulo 11). Los XML siguen el esquema del SRI v1.1.0.
-- Para emitir en modo real la empresa debe: registrar RUC y razón social, subir su firma electrónica (.p12) en "Logo y certificado", guardar la contraseña con el botón "Verificar contraseña" (el servidor la comprueba contra el certificado: caducidad y RUC) y tener el ambiente configurado. Cuando los documentos están completos, la barra superior muestra "FACTURACIÓN REAL"; si falta algo, muestra "SRI simulado".
+- Para emitir en modo real la empresa debe: registrar RUC y razón social, subir su firma electrónica (.p12) en "Logo y certificado", guardar la contraseña con el botón "Verificar contraseña" (el servidor la comprueba contra el certificado: caducidad y RUC) y tener el ambiente configurado. Cuando los documentos están completos, la barra superior muestra "FACTURACIÓN REAL"; si falta algo, muestra "Emisión en validación · sin validez tributaria".
 - La contraseña del .p12 se guarda cifrada (Supabase Vault); el navegador nunca la lee.
 - Ambiente de pruebas del SRI (celcer) para ensayar y producción (cel) para emitir oficialmente.
 - Notas de crédito, RIDE PDF y clave de acceso incluidos.

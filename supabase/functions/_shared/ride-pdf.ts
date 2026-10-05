@@ -97,6 +97,8 @@ export async function generateRidePdf(data: RideData): Promise<Uint8Array> {
   if (data.numeroAutorizacion) {
     drawText(`NÚMERO AUTORIZACIÓN: ${data.numeroAutorizacion}`, 30, y - 42, 8, true);
     drawText(`FECHA AUTORIZACIÓN: ${data.fechaAutorizacion}`, 30, y - 56, 8);
+  } else {
+    drawText("EMISIÓN EN FASE DE VALIDACIÓN · SIN VALIDEZ TRIBUTARIA", 30, y - 42, 8, true);
   }
   y -= 80;
 

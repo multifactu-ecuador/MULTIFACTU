@@ -146,7 +146,7 @@ export default function AppLayout() {
           {access && sriRealListo(access.empresa) ? (
             <span className="pill pill-real">FACTURACIÓN REAL</span>
           ) : (
-            <span className="pill">SRI simulado · sin validez tributaria</span>
+            <span className="pill">Emisión en validación · sin validez tributaria</span>
           )}
         </header>
         <div

@@ -222,7 +222,7 @@ export default function POS({ rental = false }: { rental?: boolean }) {
         {access && sriRealListo(access.empresa) ? (
           <span className="pill pill-real">FACTURACIÓN REAL</span>
         ) : (
-          <span className="pill">Demostración SRI</span>
+          <span className="pill">Emisión en validación</span>
         )}
       </div>
       {error && (
@@ -604,7 +604,7 @@ export default function POS({ rental = false }: { rental?: boolean }) {
               ? "Guardando…"
               : rental && rentalMode === "VENTA_INTERNA"
                 ? "Emitir orden de venta y contrato"
-                : "Emitir factura de demostración"}
+                : "Emitir factura"}
             <ArrowUpRight size={17} />
           </button>
           <small>
@@ -653,10 +653,10 @@ export default function POS({ rental = false }: { rental?: boolean }) {
             >
               ×
             </button>
-            <p className="eyebrow">FLUJO DE DEMOSTRACIÓN</p>
+            <p className="eyebrow">FLUJO DE EMISIÓN</p>
             <h2>
               {job.estado === "Autorizada"
-                ? "Simulación completada"
+                ? "Comprobante generado"
                 : job.estado === "Error"
                   ? "Revisión requerida"
                   : "Comprobante en proceso"}
@@ -664,9 +664,9 @@ export default function POS({ rental = false }: { rental?: boolean }) {
             <ol>
               {[
                 "XML creado",
-                "Firma simulada",
-                "Recepción simulada",
-                "Autorización simulada",
+                "Firma",
+                "Recepción",
+                "Autorización",
               ].map((v, i) => (
                 <li
                   className={

@@ -17,6 +17,7 @@ interface InvoiceRow {
   numero_autorizacion: string | null;
   fecha_autorizacion: string | null;
   ambiente_sri: string;
+  simulacion: boolean;
   establecimiento: string;
   punto_emision: string;
   secuencial: number;
@@ -120,7 +121,7 @@ Deno.serve(async (req) => {
       total: Number(invRow.total ?? 0),
       ...(invRow.credito_dias > 0 ? { plazo: invRow.credito_dias, unidadTiempo: "dias" } : {}),
     }],
-    numeroAutorizacion: invRow.numero_autorizacion ?? undefined,
+    numeroAutorizacion: invRow.simulacion ? undefined : invRow.numero_autorizacion ?? undefined,
     fechaAutorizacion: invRow.fecha_autorizacion ?? undefined,
   };
 

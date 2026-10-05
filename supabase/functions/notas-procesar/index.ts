@@ -112,7 +112,7 @@ Deno.serve(async (req) => {
       signed = simulateSignature(draft.xml);
       const r = await simulateSoap(signed, id, Deno.env.get("SRI_SIMULATION_RESULT") !== "error");
       result = r;
-      mensaje = "SIMULACIÓN: nota de crédito no firmada ni enviada al SRI";
+      mensaje = "Nota de crédito no firmada ni enviada al SRI";
     }
     const { error: updateError } = await db
       .from("notas_credito")
