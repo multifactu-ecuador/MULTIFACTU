@@ -508,6 +508,28 @@
   color: #7c8cf8;
   font-weight: 700;
 }
+/* Sección de beneficios de RUFO: la IA que aprende por empresa */
+.rufo-section {
+  background: linear-gradient(180deg, rgba(17, 24, 39, 0.045), rgba(79, 109, 245, 0.08));
+  border: 1px solid rgba(17, 24, 39, 0.14);
+  border-radius: 18px;
+  padding: 64px 40px;
+  margin-top: 30px;
+  margin-bottom: 30px;
+}
+.rufo-section .eyebrow {
+  color: #4f6df5;
+}
+.rufo-section article > span {
+  color: #4f6df5;
+  font-weight: 700;
+}
+.rufo-intro {
+  max-width: 760px;
+  margin-top: 14px;
+  color: #5a6275;
+  line-height: 1.65;
+}
 /* Botón verde Security Data (compra de firma electrónica) */
 .sda-cta {
   display: inline-flex;
@@ -3526,3 +3548,132 @@ button.secondary:disabled { opacity: 0.5; cursor: not-allowed; }
 }
 .emision-modal .nc-ok { background: #e6f9ee; color: #06753a; }
 .emision-modal .nc-fallo { background: #fdecec; color: #b3261e; }
+
+/* --- RUFO: valoración de respuestas y aprendizaje por empresa --- */
+.chat-feedback {
+  display: flex;
+  gap: 6px;
+  margin: 5px 0 6px 2px;
+}
+.chat-feedback button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border: 1px solid #d9def0;
+  border-radius: 999px;
+  background: #fff;
+  color: #6b7280;
+  cursor: pointer;
+}
+.chat-feedback button:hover {
+  border-color: #b9c4ff;
+  color: #3d4fd1;
+  background: #f7f8ff;
+}
+.chat-feedback small {
+  font-size: 11px;
+  color: #7a8194;
+  align-self: center;
+}
+.rufo-panel {
+  margin-top: 18px;
+}
+.rufo-panel h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
+  margin: 6px 0 4px;
+}
+.rufo-subtitulo {
+  font-size: 14px;
+  margin: 18px 0 6px;
+}
+.rufo-lista {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 0;
+  display: grid;
+  gap: 8px;
+}
+.rufo-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+  border: 1px solid #e6e9f2;
+  border-left-width: 4px;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #fbfcff;
+}
+.rufo-item.riesgo { border-left-color: #f04438; }
+.rufo-item.oportunidad { border-left-color: #12b76a; }
+.rufo-item.patron { border-left-color: #7a5af8; }
+.rufo-item p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #5a6275;
+}
+.rufo-acciones {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.rufo-acciones .secondary {
+  font-size: 12px;
+  padding: 6px 10px;
+}
+.rufo-vacio {
+  font-size: 13px;
+  color: #7a8194;
+  background: #f7f8fc;
+  border: 1px dashed #dfe3ee;
+  border-radius: 10px;
+  padding: 12px;
+  margin: 12px 0 0;
+}
+.rufo-recuerdos {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0;
+  display: grid;
+  gap: 6px;
+}
+.rufo-recuerdos li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  font-size: 13px;
+  color: #3d465b;
+  background: #f7f8fc;
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+.rufo-olvidar {
+  border: 1px solid transparent;
+  background: transparent;
+  color: #98a2b3;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  display: inline-flex;
+}
+.rufo-olvidar:hover {
+  color: #d92d20;
+  background: #fdecec;
+}
+.rufo-declarar {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+.rufo-declarar input {
+  flex: 1;
+  font-size: 13px;
+}

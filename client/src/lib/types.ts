@@ -161,6 +161,32 @@ export interface RentalLine {
   equipo_id: string;
   tarifa_dia: number;
 }
+// Memoria y aprendizaje de RUFO por empresa: el navegador sólo lee (RLS de
+// ADMIN); confirmar, descartar u olvidar pasa por el asistente (service role).
+export interface RufoMemoria {
+  id: string;
+  tenant_id: string;
+  clave: string;
+  valor: string;
+  origen: "declarado" | "aprendido";
+  activo: boolean;
+  creado_en: string;
+}
+
+export interface RufoAprendizaje {
+  id: string;
+  tenant_id: string;
+  clave: string;
+  tipo: "riesgo" | "oportunidad" | "patron";
+  titulo: string;
+  detalle: string;
+  evidencia: Record<string, number>;
+  periodo: string;
+  estado: "propuesto" | "confirmado" | "descartado";
+  creado_en: string;
+  revisado_en: string | null;
+}
+
 // Tipos de las tablas utilizadas por la UI. Reemplazables por supabase gen types.
 type Table<T> = {
   Row: { [K in keyof T]: T[K] };
@@ -183,6 +209,8 @@ export interface Database {
       plantillas_gastos: Table<ExpenseTemplate>;
       contratos_alquiler: Table<Rental>;
       contratos_detalles: Table<RentalLine>;
+      rufo_memoria: Table<RufoMemoria>;
+      rufo_aprendizaje: Table<RufoAprendizaje>;
     };
     Views: Record<string, never>;
     Enums: Record<string, never>;

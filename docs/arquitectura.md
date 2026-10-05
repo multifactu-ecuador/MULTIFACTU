@@ -43,6 +43,27 @@ Crear factura usa un token idempotente, precios/tarifas del catálogo y NUMERIC 
 
 Las políticas y GRANT son complementarios. No habilites escritura directa sobre facturas, detalles, cuotas, suscripciones o movimientos para resolver un error de cliente. Nunca uses metadata de usuario como fuente de rol o plan.
 
+## Aprendizaje de RUFO (IA por empresa)
+
+RUFO no reentrena modelos: aprende con **memoria por tenant + datos en vivo +
+revisión humana**, aislada por empresa.
+
+- `rufo_memoria`: recuerdos por empresa (perfil declarado y hallazgos
+  confirmados). Se inyectan en el prompt del modelo junto a un resumen del mes.
+- `rufo_aprendizaje`: hallazgos que propone el motor puro
+  `functions/_shared/rufo-learning.ts` (ventas vs. mes anterior, mora, stock
+  bajo, caja y concentración de clientes). Ciclo `propuesto → confirmado |
+  descartado`; sólo lo confirmado pasa a memoria. Unicidad por
+  `(tenant, clave, periodo)` para no duplicar propuestas.
+- `rufo_feedback`: valoración 👍/👎 de cada respuesta.
+- `rufo_control`: última corrida del análisis (máximo una vez por semana,
+  perezoso, al primer preguntar; nunca frena la respuesta).
+
+RLS: el navegador sólo **lee** (rol ADMIN del propio tenant); toda escritura es
+del service role mediante las acciones de `asistente` (`estado`, `revisar`,
+`olvidar`, `perfil`, `feedback`). RUFO sigue siendo de sólo lectura: propone
+opciones con cifras y **no decide ni ejecuta** nada.
+
 ## Referencias oficiales de implementación
 
 - Auth y trigger: https://supabase.com/docs/guides/auth/managing-user-data

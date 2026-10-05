@@ -14,6 +14,8 @@ import {
   ServerCog,
   Sparkles,
   Zap,
+  Brain,
+  Target,
 } from "lucide-react";
 import Brand from "../components/Brand";
 import WebChat from "../components/WebChat";
@@ -313,6 +315,46 @@ export default function Landing() {
             ].map(({ icon: Icon, title, text }, i) => (
               <article key={title}>
                 <span>IA·{i + 1}</span>
+                <Icon size={25} />
+                <h3>{title}</h3>
+                <p>{text}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+        <section className="marketing-section rufo-section" id="rufo">
+          <p className="eyebrow">RUFO · BENEFICIOS DE NUESTRA IA</p>
+          <h2>
+            RUFO aprende
+            <br />
+            de tu negocio.
+          </h2>
+          <p className="rufo-intro">
+            No es un chatbot genérico: lee las cifras reales de tu empresa, te
+            responde en español al instante y, con el tiempo, aprende de lo que
+            pasa en tu negocio —de tu empresa y de ninguna otra— para ayudarte a
+            decidir mejor.
+          </p>
+          <div className="module-grid">
+            {[
+              {
+                icon: Brain,
+                title: "Responde con tus números",
+                text: "Pregunta en español simple —«¿cuánto vendí este mes?», «quién me debe más?»— y responde al instante con tus facturas, cobros, caja e inventario reales.",
+              },
+              {
+                icon: Target,
+                title: "Aprende y te propone hallazgos",
+                text: "Cada semana analiza ventas, cobranza, stock y caja de tu empresa y te presenta riesgos y oportunidades con sus cifras, antes de que se te pasen.",
+              },
+              {
+                icon: Lock,
+                title: "Tú decides, él nunca decide por ti",
+                text: "Cada hallazgo lo confirmas o descartas con un clic y tu memoria es exclusiva de tu empresa: RUFO sugiere con opciones y números, pero no factura, cobra ni borra nada.",
+              },
+            ].map(({ icon: Icon, title, text }, i) => (
+              <article key={title}>
+                <span>RUFO·{i + 1}</span>
                 <Icon size={25} />
                 <h3>{title}</h3>
                 <p>{text}</p>

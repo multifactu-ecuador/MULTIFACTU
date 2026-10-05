@@ -598,7 +598,73 @@ await db.query(`select public.crear_factura($1,$2,gen_random_uuid())`, [
   cliB,
   JSON.stringify([{ id: prodB, cantidad: 1, descuento: 0 }]),
 ]);
+// --- RUFO: memoria y aprendizaje por empresa, sólo el ADMIN del tenant ---
+await owner();
+await db.query(
+  `insert into public.rufo_memoria(tenant_id,clave,valor,origen) values
+    ($1,'perfil','Alquilamos grúas y vendemos cemento en Manabí','declarado'),
+    ($1,'riesgo','Ventas a la baja hace 2 semanas: revisar clientes','aprendido'),
+    ($2,'perfil','Recuerdo de otro negocio','declarado')`,
+  [ta, tb],
+);
+await db.query(
+  `insert into public.rufo_aprendizaje(tenant_id,clave,tipo,titulo,detalle,periodo) values
+    ($1,'ventas_a_la_baja','riesgo','Ventas a la baja','Este mes vendiste 40% menos','2026-10'),
+    ($2,'ventas_a_la_baja','riesgo','Hallazgo ajeno','De otro tenant','2026-10')`,
+  [ta, tb],
+);
+// El navegador JAMÁS escribe aquí: ni inserta, ni actualiza, ni olvida.
+await user(A);
+await rejects(
+  `insert into public.rufo_memoria(tenant_id,clave,valor) values($1,'perfil','invasión')`,
+  [tb],
+);
+await rejects(`update public.rufo_memoria set activo=false`);
+await rejects(
+  `insert into public.rufo_aprendizaje(tenant_id,clave,tipo,titulo,detalle,periodo) values($1,'x','patron','t','t','2026-10')`,
+  [ta],
+);
+await rejects(
+  `insert into public.rufo_feedback(tenant_id,pregunta,respuesta,util) values($1,'p','r',true)`,
+  [ta],
+);
+// El ADMIN de A ve SÓLO lo suyo (2 recuerdos y 1 hallazgo; jamás los de B).
+assert.equal(
+  (await db.query(`select count(*) n from public.rufo_memoria`)).rows[0].n,
+  2,
+);
+assert.equal(
+  (await db.query(`select count(*) n from public.rufo_aprendizaje`)).rows[0].n,
+  1,
+);
+// B es ADMIN de OTRA empresa: ve su propio recuerdo (1), jamás los de A.
+await user(B);
+assert.equal(
+  (await db.query(`select count(*) n from public.rufo_memoria`)).rows[0].n,
+  1,
+);
+assert.equal(
+  (await db.query(`select count(*) n from public.rufo_aprendizaje`)).rows[0].n,
+  1,
+);
+// El rol ADMIN manda: degradado a CAJERO, el asistente queda ciego.
+await owner();
+await db.query(`update public.usuarios_perfiles set rol='CAJERO' where tenant_id=$1`, [ta]);
+await user(A);
+assert.equal(
+  (await db.query(`select count(*) n from public.rufo_memoria`)).rows[0].n,
+  0,
+);
+assert.equal(
+  (await db.query(`select count(*) n from public.rufo_aprendizaje`)).rows[0].n,
+  0,
+);
+// rufo_control (control del análisis) no tiene política: invisible al cliente.
+await rejects(`select * from public.rufo_control`);
+await owner();
+await db.query(`update public.usuarios_perfiles set rol='ADMIN' where tenant_id=$1`, [ta]);
+
 await db.close();
 console.log(
-  "PASS: SQL ejecutado en PostgreSQL WASM; RLS, trigger, aislamiento, privilegios, finanzas, stock, idempotencia, storage, vencimiento y vault.",
+  "PASS: SQL ejecutado en PostgreSQL WASM; RLS, trigger, aislamiento, privilegios, finanzas, stock, idempotencia, storage, vencimiento, vault y aprendizaje de RUFO.",
 );
