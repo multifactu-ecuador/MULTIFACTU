@@ -40,7 +40,11 @@ function TemplatesEditor() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
   const [form, setForm] = useState<any>({});
+  /** true cuando hay cambios sin guardar: evita que la recarga periódica
+   *  de la sesión (cada 15 s) pise lo que el usuario está editando. */
+  const [dirty, setDirty] = useState(false);
 
   const load = useCallback(async () => {
     if (!access) return;
@@ -62,6 +66,7 @@ function TemplatesEditor() {
   }, [load]);
 
   useEffect(() => {
+    if (dirty) return;
     const t = templates.find(t => t.tipo === activeTipo && t.es_predeterminada);
     if (t) {
       setForm({
@@ -104,13 +109,15 @@ function TemplatesEditor() {
         css_template: "",
       });
     }
-  }, [activeTipo, templates]);
+  }, [activeTipo, templates, dirty]);
 
-  const handleChange = (field: string, value: any) => setForm((f: any) => ({ ...f, [field]: value }));
-  const handleNestedChange = (parent: string, key: string, value: any) => setForm((f: any) => ({ ...f, [parent]: { ...f[parent], [key]: value } }));
-  const handleCampoChange = (index: number, field: string, value: string) => setForm((f: any) => { const arr = [...(f.campos_personalizados || [])]; arr[index] = { ...arr[index], [field]: value }; return { ...f, campos_personalizados: arr }; });
-  const addCampo = () => setForm((f: any) => ({ ...f, campos_personalizados: [...(f.campos_personalizados || []), { clave: "", valor: "", mostrar_en: "factura" }] }));
-  const removeCampo = (index: number) => setForm((f: any) => { const arr = [...(f.campos_personalizados || [])]; arr.splice(index, 1); return { ...f, campos_personalizados: arr }; });
+  const handleChange = (field: string, value: any) => { setDirty(true); setForm((f: any) => ({ ...f, [field]: value })); };
+  const handleNestedChange = (parent: string, key: string, value: any) => { setDirty(true); setForm((f: any) => ({ ...f, [parent]: { ...f[parent], [key]: value } })); };
+  const handleCampoChange = (index: number, field: string, value: string) => { setDirty(true); setForm((f: any) => { const arr = [...(f.campos_personalizados || [])]; arr[index] = { ...arr[index], [field]: value }; return { ...f, campos_personalizados: arr }; }); };
+  const addCampo = () => { setDirty(true); setForm((f: any) => ({ ...f, campos_personalizados: [...(f.campos_personalizados || []), { clave: "", valor: "", mostrar_en: "factura" }] })); };
+  const removeCampo = (index: number) => { setDirty(true); setForm((f: any) => { const arr = [...(f.campos_personalizados || [])]; arr.splice(index, 1); return { ...f, campos_personalizados: arr }; }); };
+  const switchTipo = (t: typeof activeTipo) => { setDirty(false); setActiveTipo(t); };
+  const newTemplate = () => { setDirty(false); setForm({}); };
   const uploadLogo = async (file: File) => {
     if (!access) return;
     const path = `${access.tenant_id}/logo-${Date.now()}.${file.type.split("/")[1]}`;
@@ -131,9 +138,9 @@ function TemplatesEditor() {
     }
     setSaving(true);
     setError("");
+    setMessage("");
     try {
       const payload = {
-        id: form.id,
         tenant_id: access.tenant_id,
         tipo: activeTipo,
         nombre: form.nombre.trim(),
@@ -149,8 +156,23 @@ function TemplatesEditor() {
         html_template: form.html_template,
         css_template: form.css_template,
       };
-      const { error } = await (db() as any).from("plantillas_documento").upsert(payload, { onConflict: "tenant_id,tipo,nombre" });
-      if (error) throw error;
+      if (form.id) {
+        const { error } = await (db() as any).from("plantillas_documento").update(payload).eq("id", form.id);
+        if (error) throw error;
+      } else {
+        // Una sola predeterminada por tipo: liberar la anterior antes de crear.
+        if (form.es_predeterminada) {
+          await (db() as any).from("plantillas_documento")
+            .update({ es_predeterminada: false })
+            .eq("tenant_id", access.tenant_id)
+            .eq("tipo", activeTipo)
+            .eq("es_predeterminada", true);
+        }
+        const { error } = await (db() as any).from("plantillas_documento").insert(payload);
+        if (error) throw error;
+      }
+      setDirty(false);
+      setMessage("Plantilla guardada.");
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error guardando plantilla");
@@ -169,10 +191,17 @@ function TemplatesEditor() {
     }
   };
   const duplicateTemplate = async (t: any) => {
-    const newName = `${t.nombre} (copia)`;
     try {
-      const { error } = await (db() as any).from("plantillas_documento").insert({ ...t, nombre: `${t.nombre} (copia)`, es_predeterminada: false });
+      // Nunca copiar id ni marcas de tiempo: son claves del original.
+      const { id, creado_en, actualizado_en, ...rest } = t;
+      const copias = templates.filter((x) => x.tipo === t.tipo).length;
+      const { error } = await (db() as any).from("plantillas_documento").insert({
+        ...rest,
+        nombre: `${t.nombre} (copia ${copias})`,
+        es_predeterminada: false,
+      });
       if (error) throw error;
+      setMessage("Plantilla duplicada.");
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error duplicando");
@@ -187,16 +216,17 @@ function TemplatesEditor() {
           <h1>Personaliza tus documentos.</h1>
           <p>Logo, colores, cabecera, pie y campos.</p>
         </div>
-        <button className="button" onClick={() => setForm({})} style={{ marginLeft: "auto" }}>
+        <button className="button" onClick={newTemplate} style={{ marginLeft: "auto" }}>
           <Plus size={16} /> Nueva plantilla
         </button>
       </div>
       {error && <p className="error">{error}</p>}
+      {message && <p className="notice" role="status">{message}</p>}
       <div style={{ display: "grid", gridTemplateColumns: "280px 1fr", gap: "24px" }}>
         <aside className="card" style={{ padding: "16px", height: "fit-content", position: "sticky", top: "24px" }}>
           <h3 style={{ marginBottom: "12px", fontSize: "14px", textTransform: "uppercase", letterSpacing: "0.5px", color: "#6b7280" }}>TIPO DE DOCUMENTO</h3>
           {TIPOS.map(t => (
-            <button key={t.value} className={activeTipo === t.value ? "active" : ""} onClick={() => setActiveTipo(t.value as any)} style={{ width: "100%", display: "flex", alignItems: "center", gap: "10px", padding: "12px", marginBottom: "6px", border: "none", background: activeTipo === t.value ? "var(--accent)" : "transparent", color: activeTipo === t.value ? "#fff" : "inherit", borderRadius: "8px", cursor: "pointer", fontWeight: activeTipo === t.value ? "600" : "400", transition: "all 0.15s" }}>
+            <button key={t.value} className={activeTipo === t.value ? "active" : ""} onClick={() => switchTipo(t.value as any)} style={{ width: "100%", display: "flex", alignItems: "center", gap: "10px", padding: "12px", marginBottom: "6px", border: "none", background: activeTipo === t.value ? "var(--accent)" : "transparent", color: activeTipo === t.value ? "#fff" : "inherit", borderRadius: "8px", cursor: "pointer", fontWeight: activeTipo === t.value ? "600" : "400", transition: "all 0.15s" }}>
               <t.icon size={18} />
               <span>{t.label}</span>
               {templates.filter(tp => tp.tipo === t.value).length > 0 && (
@@ -315,7 +345,7 @@ function TemplatesEditor() {
               </div>
             </fieldset>
             <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end", marginTop: "8px", paddingTop: "16px", borderTop: "1px solid #e5e7eb" }}>
-              <button type="button" className="secondary" onClick={() => load()}>{saving ? "Guardando..." : "Cancelar"}</button>
+              <button type="button" className="secondary" onClick={() => setDirty(false)}>{saving ? "Guardando..." : "Descartar cambios"}</button>
               <button type="submit" className="button" disabled={saving}>
                 <Save size={16} /> {saving ? "Guardando..." : "Guardar plantilla"}
               </button>

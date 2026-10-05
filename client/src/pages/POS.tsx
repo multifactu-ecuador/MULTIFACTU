@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { Search, Plus, Trash2, ArrowUpRight } from "lucide-react";
-import { db, check, money, today } from "../lib/supabase";
+import { db, check, money, today, sriRealListo } from "../lib/supabase";
 import type {
   Client,
   Product,
@@ -219,7 +219,11 @@ export default function POS({ rental = false }: { rental?: boolean }) {
             una sola operación.
           </p>
         </div>
-        <span className="pill">Demostración SRI</span>
+        {access && sriRealListo(access.empresa) ? (
+          <span className="pill pill-real">FACTURACIÓN REAL</span>
+        ) : (
+          <span className="pill">Demostración SRI</span>
+        )}
       </div>
       {error && (
         <p className="error" role="alert">

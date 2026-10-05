@@ -22,7 +22,8 @@ export interface Company {
   punto_emision: string;
   ruta_p12: string | null;
   logo_path: string | null;
-  p12_password?: string | null;
+  /** Referencia opaca al secreto cifrado en Supabase Vault (nunca la contraseña). */
+  p12_secret_id?: string | null;
   regimen?: "general" | "rimpe_emprendedor" | "rimpe_negocio_popular";
   obligado_contabilidad?: boolean;
   creado_en: string;
@@ -40,6 +41,13 @@ export interface Access {
   rol: "ADMIN" | "CAJERO";
   nombre: string;
   ahora: string;
+  /** true sólo para la empresa del dueño del sistema: todo habilitado siempre. */
+  superadmin?: boolean;
+  /** Facturas emitidas en la prueba gratuita (límite 10 en PostgreSQL). */
+  facturas_prueba?: number;
+  /** Datos personales de la página "Mi cuenta". */
+  telefono?: string | null;
+  avatar_path?: string | null;
   empresa: Company;
   suscripcion: Subscription;
   funciones: Record<Feature, boolean>;
@@ -74,9 +82,24 @@ export interface Invoice {
   simulacion: boolean;
   total: number;
   mensaje: string | null;
+  clave_acceso: string | null;
   numero_autorizacion: string | null;
   xml_borrador: string | null;
   xml_firmado: string | null;
+}
+export interface CreditNote {
+  id: string;
+  tenant_id: string;
+  factura_id: string;
+  estado: "Pendiente" | "Procesando" | "Autorizada" | "Error";
+  simulacion: boolean;
+  motivo: string;
+  total: number;
+  secuencial: number | null;
+  clave_acceso: string | null;
+  numero_autorizacion: string | null;
+  mensaje: string | null;
+  creado_en: string;
 }
 export interface Movement {
   id: string;
@@ -153,6 +176,7 @@ export interface Database {
       clientes: Table<Client>;
       catalogo_maquinaria: Table<Product>;
       facturas_sri: Table<Invoice>;
+      notas_credito: Table<CreditNote>;
       movimientos_caja: Table<Movement>;
       cuotas: Table<Installment>;
       cierres_caja: Table<Closing>;
@@ -245,6 +269,36 @@ export interface Database {
       cerrar_caja: {
         Args: { p_fecha: string; p_fisico: number };
         Returns: string;
+      };
+      guardar_p12_password: {
+        Args: { p_password: string };
+        Returns: undefined;
+      };
+      crear_proforma: {
+        Args: {
+          p_cliente: string;
+          p_items: Array<{ id: string; cantidad: number; descuento: number }>;
+          p_metodo?: string;
+          p_credito_dias?: number;
+          p_validez_dias?: number;
+        };
+        Returns: { id: string; numero: number; token: string };
+      };
+      anular_proforma: {
+        Args: { p_id: string };
+        Returns: undefined;
+      };
+      ver_proforma: {
+        Args: { p_token: string };
+        Returns: unknown;
+      };
+      aprobar_proforma: {
+        Args: { p_token: string };
+        Returns: { estado: string; factura?: string };
+      };
+      rechazar_proforma: {
+        Args: { p_token: string };
+        Returns: { estado: string };
       };
     };
   };

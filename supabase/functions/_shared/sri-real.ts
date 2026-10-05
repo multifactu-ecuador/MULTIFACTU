@@ -1,6 +1,7 @@
 // Firma XAdES-BES real + SOAP real al SRI (Recepción y Autorización).
 // Se activa con SRI_MODE=real. Requiere ruta_p12 en empresas, contraseña
-// del .p12 en empresas.p12_password y bucket privado "certificados".
+// del .p12 cifrada en Supabase Vault (RPC leer_p12_password, sólo
+// service_role) y bucket privado "certificados".
 import forge from "npm:node-forge@1.4.0";
 import { SignedXml } from "npm:xml-crypto@6.1.1";
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2.117.2";

@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, BarChart3, FileBarChart, ShoppingCart, UsersRound } from "lucide-react";
+import { ArrowRight, BarChart3, FileBarChart, ShoppingCart, Sparkles, UsersRound } from "lucide-react";
 import Brand from "../components/Brand";
 
 const reportCards = [
@@ -69,6 +69,7 @@ export default function BusinessIntelligence() {
         <div className="report-grid">{reportCards.map(({ icon: Icon, title, text, bullets }) => <article key={title}><Icon size={26} /><h3>{title}</h3><p>{text}</p><ul>{bullets.map((bullet) => <li key={bullet}>{bullet}</li>)}</ul></article>)}</div>
       </section>
       <section className="info-banner insight-note"><BarChart3 size={28} /><div><h2>Datos de tu empresa, no estimaciones.</h2><p>El panel toma como base las ventas, cobros, gastos y cuentas que registres. La vista gráfica de esta página es solo un ejemplo de cómo podrás revisar tus indicadores.</p></div></section>
+      <section className="info-banner insight-note"><Sparkles size={28} /><div><h2>Asistente IA de reportes comerciales.</h2><p>Un chat interno donde el dueño pregunta en español simple: «¿cuánto vendí este mes comparado al mes pasado?», «¿cuáles son mis 3 clientes que más me deben?», «¿qué producto se está vendiendo menos?». El sistema analiza las facturas, cobros e inventario de tu empresa y responde con un resumen instantáneo. Disponible en el plan Luxury.</p></div></section>
       <section className="info-section info-faq">
         <p className="eyebrow">PARA QUÉ SIRVE</p>
         <div>
@@ -78,6 +79,6 @@ export default function BusinessIntelligence() {
         </div>
       </section>
     </main>
-    <footer><Brand /><p>Ventas, alquileres, servicios y mantenimiento para Ecuador.</p><div><Link to="/facturacion-electronica">Facturación electrónica</Link><Link to="/seguridad">Seguridad</Link><Link to="/terminos">Términos de servicio</Link><Link to="/privacidad">Política de privacidad</Link><Link to="/contrato-encargo">Contrato de encargo</Link></div><small>© 2026 MULTIFACTU · Indicadores basados en los datos registrados por tu empresa.</small></footer>
+    <footer><Brand /><p>Sistema de facturación para ventas, alquileres y servicios en Ecuador.</p><div><Link to="/facturacion-electronica">Facturación electrónica</Link><Link to="/seguridad">Seguridad</Link><Link to="/terminos">Términos de servicio</Link><Link to="/privacidad">Política de privacidad</Link><Link to="/contrato-encargo">Contrato de encargo</Link></div><small>© 2026 MULTIFACTU · Indicadores basados en los datos registrados por tu empresa.</small></footer>
   </div>;
 }

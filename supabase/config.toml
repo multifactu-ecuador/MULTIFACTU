@@ -9,3 +9,20 @@ verify_jwt = false
 [functions.generar-ride]
 # Se valida el token y la pertenencia al tenant dentro del handler.
 verify_jwt = false
+
+[functions.consultar-ruc]
+# Se valida sesión, rol ADMIN y origen permitido dentro de la función.
+verify_jwt = false
+
+[functions.verificar-p12]
+# Se valida sesión y rol ADMIN dentro de la función; la contraseña sólo
+# transita por TLS y se usa en RAM. Límite de intentos en la función.
+verify_jwt = false
+
+[functions.asistente]
+# Se valida sesión y rol ADMIN dentro de la función; responde con datos del tenant.
+verify_jwt = false
+
+[functions.asistente-web]
+# Asistente público de la web: sin sesión; límite por IP dentro de la función.
+verify_jwt = false

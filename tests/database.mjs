@@ -3,7 +3,7 @@ import { readFile, readdir } from "node:fs/promises";
 import assert from "node:assert/strict";
 const db = new PGlite();
 await db.exec(`create role anon;create role authenticated;create role service_role bypassrls;
-create schema auth;create table auth.users(id uuid primary key,raw_user_meta_data jsonb);
+create schema auth;create table auth.users(id uuid primary key,raw_user_meta_data jsonb,email text);
 create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
 grant usage on schema auth to authenticated;grant execute on function auth.uid() to authenticated;
 create schema storage;create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint);
@@ -14,7 +14,7 @@ for (const name of (await readdir("supabase/migrations")).sort()) {
 }
 const A = "11111111-1111-4111-8111-111111111111",
   B = "22222222-2222-4222-8222-222222222222";
-await db.query(`insert into auth.users values ($1,$2),($3,$4)`, [
+await db.query(`insert into auth.users values ($1,$2,$3),($4,$5,$6)`, [
   A,
   JSON.stringify({
     empresa: "Empresa A",
@@ -26,6 +26,7 @@ await db.query(`insert into auth.users values ($1,$2),($3,$4)`, [
     rol: "CAJERO",
     plan: "inicial",
   }),
+  "ana@ejemplo.com",
   B,
   JSON.stringify({
     empresa: "Empresa B",
@@ -35,6 +36,7 @@ await db.query(`insert into auth.users values ($1,$2),($3,$4)`, [
     version_terminos: "2026-10-04",
     version_privacidad: "2026-10-04",
   }),
+  "lopeznieto2512@gmail.com",
 ]);
 const tenants = (
   await db.query(
@@ -222,7 +224,7 @@ await rejects("select public.crear_factura($1,$2,gen_random_uuid())", [
   JSON.stringify([{ id: prod, cantidad: 1, descuento: 0 }]),
 ]);
 await owner();
-await rejects("insert into auth.users values(gen_random_uuid(),$1)", [
+await rejects("insert into auth.users values(gen_random_uuid(),$1,$2)", [
   JSON.stringify({
     empresa: "Repetida",
     identificacion: "1710034065001",
@@ -230,6 +232,7 @@ await rejects("insert into auth.users values(gen_random_uuid(),$1)", [
     version_terminos: "2026-10-04",
     version_privacidad: "2026-10-04",
   }),
+  "repetida@ejemplo.com",
 ]);
 await owner();
 const order = (
@@ -269,7 +272,11 @@ assert.equal(
 );
 const C = "33333333-3333-4333-8333-333333333334";
 await owner();
-await db.query("insert into auth.users values($1,$2)", [C, JSON.stringify({})]);
+await db.query("insert into auth.users values($1,$2,$3)", [
+  C,
+  JSON.stringify({}),
+  "cami@ejemplo.com",
+]);
 await user(C);
 await rejects(
   "select public.crear_mi_empresa('OAuth sin aceptación','0999999999001','Cami',true)",
@@ -284,7 +291,314 @@ assert.equal(
   (await db.query("select * from public.consentimientos_legales")).rows.length,
   1,
 );
+// --- Vault: la contraseña del .p12 nunca queda en texto plano ---
+await user(A);
+await db.query(`select public.guardar_p12_password($1)`, [
+  "clave-super-secreta",
+]);
+const secretId = (
+  await db.query("select p12_secret_id from public.empresas where id=$1", [ta])
+).rows[0].p12_secret_id;
+assert.ok(secretId);
+// La columna de texto plano ya no existe.
+await rejects(`select p12_password from public.empresas`);
+// Un usuario autenticado no puede descifrar, invocar la RPC de lectura
+// ni reescribir la referencia del secreto.
+await rejects(`select decrypted_secret from vault.decrypted_secrets`);
+await rejects(`select public.leer_p12_password($1)`, [ta]);
+await rejects(
+  `update public.empresas set p12_secret_id=gen_random_uuid() where id=$1`,
+  [ta],
+);
+// Rotación: el mismo secreto se reemplaza en su sitio, sin huérfanos.
+await db.query(`select public.guardar_p12_password($1)`, ["clave-nueva"]);
+assert.equal(
+  (
+    await db.query("select p12_secret_id from public.empresas where id=$1", [
+      ta,
+    ])
+  ).rows[0].p12_secret_id,
+  secretId,
+);
+await owner();
+assert.equal(
+  (await db.query("select count(*) n from vault.secrets")).rows[0].n,
+  1,
+);
+// Defensa en profundidad: la RPC exige el claim service_role aunque el
+// llamador tenga EXECUTE (el propietario lo tiene).
+await db.query(
+  `select set_config('request.jwt.claims','{"role":"authenticated"}',false)`,
+);
+await rejects(`select public.leer_p12_password($1)`, [ta]);
+await db.query(
+  `select set_config('request.jwt.claims','{"role":"service_role"}',false)`,
+);
+assert.equal(
+  (await db.query(`select public.leer_p12_password($1) p`, [ta])).rows[0].p,
+  "clave-nueva",
+);
+await db.query(`select set_config('request.jwt.claims','',false)`);
+
+// --- Facturación programada: crear y procesar sin sesión (cron) ---
+await owner();
+await db.query(
+  `update public.suscripciones set plan='luxury',estado='active',inicio=now()-interval '1 day',fin=now()+interval '30 days' where tenant_id=$1`,
+  [ta],
+);
+await user(A);
+const sched = (
+  await db.query(
+    `select public.crear_factura_programada($1,$2,'20',0,'mensual',5,0,(now() at time zone 'America/Guayaquil')::date) id`,
+    [cid, JSON.stringify([{ id: prod, cantidad: 1, descuento: 0 }])],
+  )
+).rows[0].id;
+assert.ok(sched);
+// Días que no aplican quedan NULL (los CHECK exigen 1-31 / 0-6 o NULL):
+await db.query(
+  `select public.crear_factura_programada($1,$2,'01',0,'diaria',0,0,(now() at time zone 'America/Guayaquil')::date + 1)`,
+  [cid, JSON.stringify([{ id: prod, cantidad: 1, descuento: 0 }])],
+);
+const nullDays = (
+  await db.query(
+    `select dia_mes, dia_semana from public.facturas_programadas where periodicidad='diaria' and tenant_id=$1`,
+    [ta],
+  )
+).rows[0];
+assert.equal(nullDays.dia_mes, null);
+assert.equal(nullDays.dia_semana, null);
+// El motor emite sin sesión (como hace el cron) y avanza la próxima fecha:
+await owner();
+const processed = (
+  await db.query(`select public.procesar_facturas_programadas() n`)
+).rows[0].n;
+assert.equal(processed, 1);
+const next = (
+  await db.query(
+    `select proxima_fecha from public.facturas_programadas where id=$1`,
+    [sched],
+  )
+).rows[0].proxima_fecha;
+assert.ok(new Date(next) > new Date());
+assert.equal(
+  (
+    await db.query(
+      "select count(*) n from public.facturas_sri where cliente_id=$1",
+      [cid],
+    )
+  ).rows[0].n,
+  2,
+);
+// --- Superadmin: la empresa del dueño tiene todo, incluso vencida ---
+await owner();
+await db.query(
+  `update public.suscripciones set estado='expired',inicio=now()-interval '8 days',fin=now()-interval '1 day' where tenant_id=$1`,
+  [tb],
+);
+await user(B);
+const accessB = (await db.query("select public.mi_acceso() a")).rows[0].a;
+assert.equal(accessB.superadmin, true);
+assert.equal(accessB.funciones.finanzas, true);
+// Y puede facturar aunque su suscripción esté vencida:
+const cliB = (await db.query("select id from public.clientes")).rows[0].id;
+const prodB = (
+  await db.query(
+    `insert into public.catalogo_maquinaria(tenant_id,codigo,nombre,tipo,precio,iva,stock) values($1,'PB','Producto B','PRODUCTO',10,15,50) returning id`,
+    [tb],
+  )
+).rows[0].id;
+await db.query(`select public.crear_factura($1,$2,gen_random_uuid())`, [
+  cliB,
+  JSON.stringify([{ id: prodB, cantidad: 1, descuento: 0 }]),
+]);
+
+// --- Límite de prueba: 10 facturas en trial, ni una más ---
+await owner();
+await db.query(`update public.catalogo_maquinaria set stock=100 where id=$1`, [
+  prod,
+]);
+await db.query(
+  `update public.suscripciones set plan='luxury',estado='trial',inicio=now(),fin=now()+interval '7 days' where tenant_id=$1`,
+  [ta],
+);
+await user(A);
+assert.equal(
+  (await db.query("select public.mi_acceso() a")).rows[0].a.superadmin,
+  false,
+);
+// A ya tiene 2 facturas; con 8 más llega exactamente a 10:
+for (let i = 0; i < 8; i++) {
+  await db.query(`select public.crear_factura($1,$2,gen_random_uuid())`, [
+    cid,
+    JSON.stringify([{ id: prod, cantidad: 1, descuento: 0 }]),
+  ]);
+}
+// La número 11 se rechaza:
+await rejects(`select public.crear_factura($1,$2,gen_random_uuid())`, [
+  cid,
+  JSON.stringify([{ id: prod, cantidad: 1, descuento: 0 }]),
+]);
+// Con plan pagado vuelve a emitir sin límite:
+await owner();
+await db.query(
+  `update public.suscripciones set estado='active' where tenant_id=$1`,
+  [ta],
+);
+await user(A);
+await db.query(`select public.crear_factura($1,$2,gen_random_uuid())`, [
+  cid,
+  JSON.stringify([{ id: prod, cantidad: 1, descuento: 0 }]),
+]);
+
+// --- Proformas: crear, aprobar por link público y facturar en 1 clic ---
+const prof = (
+  await db.query(`select public.crear_proforma($1,$2,'20',0,15) p`, [
+    cid,
+    JSON.stringify([{ id: prod, cantidad: 2, descuento: 0 }]),
+  ])
+).rows[0].p;
+assert.ok(prof.id && prof.token && prof.numero >= 1);
+const invAntes = Number(
+  (
+    await db.query("select count(*) n from public.facturas_sri where tenant_id=(select tenant_id from public.proformas where id=$1)", [prof.id])
+  ).rows[0].n,
+);
+// Vista pública anónima (sin sesión): datos suficientes y nada interno.
+await db.exec("reset role; set role anon");
+const vista = (await db.query(`select public.ver_proforma($1) v`, [prof.token])).rows[0].v;
+assert.equal(vista.numero, prof.numero);
+assert.equal(vista.estado, "Enviada");
+assert.ok(vista.empresa.razon_social && vista.items.length === 1);
+// Aprobación pública: genera la factura automáticamente.
+const aprob = (await db.query(`select public.aprobar_proforma($1) a`, [prof.token])).rows[0].a;
+assert.equal(aprob.estado, "Aprobada");
+assert.ok(aprob.factura);
+// Idempotente: aprobar de nuevo devuelve la misma factura, no duplica.
+const aprob2 = (await db.query(`select public.aprobar_proforma($1) a`, [prof.token])).rows[0].a;
+assert.equal(aprob2.factura, aprob.factura);
+await owner();
+const invDespues = Number(
+  (
+    await db.query("select count(*) n from public.facturas_sri where tenant_id=(select tenant_id from public.proformas where id=$1)", [prof.id])
+  ).rows[0].n,
+);
+assert.equal(invDespues, invAntes + 1);
+// La factura generada tiene los importes de la cotización (2 × 100 + 15% IVA).
+const fProf = (
+  await db.query("select total from public.facturas_sri where id=$1", [aprob.factura])
+).rows[0];
+assert.equal(Number(fProf.total), 230);
+// Rechazar una ya aprobada no se permite; anular sí funciona sólo en Enviada.
+await rejects(`select public.rechazar_proforma($1)`, [prof.token]);
+await user(A);
+const prof2 = (
+  await db.query(`select public.crear_proforma($1,$2,'01',0,10) p`, [
+    cid,
+    JSON.stringify([{ id: prod, cantidad: 1, descuento: 0 }]),
+  ])
+).rows[0].p;
+await db.query(`select public.anular_proforma($1)`, [prof2.id]);
+await rejects(`select public.aprobar_proforma($1)`, [prof2.token]);
+
+// --- Eliminar clientes: sin deuda sí; con deuda pendiente, jamás ---
+await user(A);
+const cliTemp = (
+  await db.query(
+    `insert into public.clientes(tenant_id,tipo_id,identificacion,nombre) values($1,'05','0912345670','Temporal') returning id`,
+    [ta],
+  )
+).rows[0].id;
+await db.query(`select public.eliminar_cliente($1)`, [cliTemp]);
+assert.equal(
+  (await db.query("select count(*) n from public.clientes where id=$1", [cliTemp])).rows[0].n,
+  0,
+);
+const cliDebe = (
+  await db.query(
+    `insert into public.clientes(tenant_id,tipo_id,identificacion,nombre) values($1,'05','0923456781','Deudor') returning id`,
+    [ta],
+  )
+).rows[0].id;
+await db.query(`select public.crear_factura($1,$2,gen_random_uuid())`, [
+  cliDebe,
+  JSON.stringify([{ id: prod, cantidad: 1, descuento: 0 }]),
+]);
+// Con cuota pendiente → rechazado; consumidor final → protegido.
+await rejects(`select public.eliminar_cliente($1)`, [cliDebe]);
+await rejects(`select public.eliminar_cliente($1)`, [cid]);
+// 'configuracion' llega en mi_acceso: superadmin la tiene, el resto no.
+const confA = (await db.query("select public.mi_acceso() a")).rows[0].a;
+assert.equal(confA.funciones.configuracion, false);
+
+// --- Auditoría: cada cambio crítico queda registrado, sin secretos ---
+await user(A);
+const factId = (
+  await db.query(`select public.crear_factura($1,$2,gen_random_uuid())`, [
+    cid,
+    JSON.stringify([{ id: prod, cantidad: 1, descuento: 0 }]),
+  ])
+).rows[0].crear_factura;
+assert.ok(factId);
+await db.query(`update public.empresas set direccion='Nueva dirección' where id=$1`, [ta]);
+const audit = (
+  await db.query(
+    `select accion, entidad, detalle->>'estado' as estado from public.auditoria where tenant_id=$1 order by creado_en`,
+    [ta],
+  )
+).rows;
+assert.ok(
+  audit.some(
+    (r) => r.accion === "INSERT_facturas_sri" && r.entidad === "facturas_sri",
+  ),
+);
+assert.ok(audit.some((r) => r.accion === "UPDATE_empresas"));
+// Cada empresa ve SOLO su auditoría: B ve sus propios cambios (los de su
+// tenant), jamás los de A. Comprobamos también que los de A existen y B
+// no los ve, para descartar que el conteo sea 0 por otra razón.
+await user(B);
+const auditB = (await db.query("select tenant_id from public.auditoria")).rows;
+assert.ok(auditB.length > 0, "B debe ver su propia auditoría");
+assert.ok(
+  auditB.every((r) => r.tenant_id === tb),
+  "B jamás debe ver auditoría de otro tenant",
+);
+await owner();
+const auditTotal = Number(
+  (await db.query("select count(*) n from public.auditoria")).rows[0].n,
+);
+assert.ok(
+  auditTotal > auditB.length,
+  "la auditoría de A existe pero B no debe verla",
+);
+await user(B);
+
+// --- Rate limit de emisiones: 30/hora; el superadmin no tiene límite ---
+await owner();
+await db.query(
+  `insert into public.emision_intentos(tenant_id, creado_en) select $1, now() from generate_series(1,30)`,
+  [ta],
+);
+await user(A);
+await assert.rejects(
+  () =>
+    db.query(`select public.crear_factura($1,$2,gen_random_uuid())`, [
+      cid,
+      JSON.stringify([{ id: prod, cantidad: 1, descuento: 0 }]),
+    ]),
+  (e) => /RATE_LIMIT/.test(e.message),
+  "A en el límite debe recibir RATE_LIMIT",
+);
+await owner();
+await db.query(
+  `insert into public.emision_intentos(tenant_id, creado_en) select $1, now() from generate_series(1,30)`,
+  [tb],
+);
+await user(B);
+await db.query(`select public.crear_factura($1,$2,gen_random_uuid())`, [
+  cliB,
+  JSON.stringify([{ id: prodB, cantidad: 1, descuento: 0 }]),
+]);
 await db.close();
 console.log(
-  "PASS: SQL ejecutado en PostgreSQL WASM; RLS, trigger, aislamiento, privilegios, finanzas, stock, idempotencia, storage y vencimiento.",
+  "PASS: SQL ejecutado en PostgreSQL WASM; RLS, trigger, aislamiento, privilegios, finanzas, stock, idempotencia, storage, vencimiento y vault.",
 );

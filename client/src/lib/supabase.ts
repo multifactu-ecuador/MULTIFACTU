@@ -31,3 +31,23 @@ export const money = (value: number) =>
   new Intl.NumberFormat("es-EC", { style: "currency", currency: "USD" }).format(
     value,
   );
+
+/**
+ * true cuando la empresa completó todos sus documentos para emitir en modo
+ * real: RUC válido, razón social, régimen, certificado .p12 y su contraseña
+ * verificada (guardada cifrada en Vault).
+ */
+export const sriRealListo = (e?: {
+  ruc?: string | null;
+  razon_social?: string | null;
+  regimen?: string | null;
+  ruta_p12?: string | null;
+  p12_secret_id?: string | null;
+}) =>
+  !!e &&
+  !!e.ruc &&
+  /^\d{13}$/.test(e.ruc) &&
+  !!e.razon_social &&
+  !!e.regimen &&
+  !!e.ruta_p12 &&
+  !!e.p12_secret_id;

@@ -18,6 +18,8 @@ import Finance from "./pages/Finance";
 import Documents from "./pages/Documents";
 import Plans from "./pages/Plans";
 import Profile from "./pages/Profile";
+import Account from "./pages/Account";
+import Storage from "./pages/Storage";
 import Onboarding from "./pages/Onboarding";
 import Legal from "./pages/Legal";
 import Privacy from "./pages/Privacy";
@@ -27,6 +29,9 @@ import AuthConfirm from "./pages/AuthConfirm";
 import Security from "./pages/Security";
 import ElectronicInvoicing from "./pages/ElectronicInvoicing";
 import BusinessIntelligence from "./pages/BusinessIntelligence";
+import Proformas from "./pages/Proformas";
+import QuotePublic from "./pages/QuotePublic";
+import Assistant from "./pages/Assistant";
 export default function App() {
   return (
     <BrowserRouter>
@@ -43,6 +48,7 @@ export default function App() {
           <Route path="/facturacion-electronica" element={<ElectronicInvoicing />} />
           <Route path="/inteligencia-negocios" element={<BusinessIntelligence />} />
           <Route path="/auth/confirm" element={<AuthConfirm />} />
+          <Route path="/cotizacion/:token" element={<QuotePublic />} />
           <Route element={<ProtectedRoute />}>
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/app" element={<AppLayout />}>
@@ -103,6 +109,22 @@ export default function App() {
                 }
               />
               <Route
+                path="proformas"
+                element={
+                  <PlanGate feature="proformas">
+                    <Proformas />
+                  </PlanGate>
+                }
+              />
+              <Route
+                path="asistente"
+                element={
+                  <PlanGate feature="analisis">
+                    <Assistant />
+                  </PlanGate>
+                }
+              />
+              <Route
                 path="programadas"
                 element={
                   <PlanGate feature="programada">
@@ -111,6 +133,8 @@ export default function App() {
                 }
               />
               <Route path="perfil" element={<Profile />} />
+              <Route path="cuenta" element={<Account />} />
+              <Route path="almacenamiento" element={<Storage />} />
               <Route path="planes" element={<Plans />} />
               <Route path="plantillas" element={<PlanGate feature="configuracion"><TemplatesEditor /></PlanGate>} />
             </Route>

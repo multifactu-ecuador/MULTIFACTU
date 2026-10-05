@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
+import { Plus, Search, Sparkles, Trash2 } from "lucide-react";
 import { db, check, money, today } from "../lib/supabase";
 import { useAuth } from "../auth/AuthContext";
-import type { Client, Invoice } from "../lib/types";
+import { preview } from "../../../shared/fiscal.ts";
+import type { Client, Product } from "../lib/types";
 
 interface ScheduledInvoice {
   id: string;
@@ -18,24 +20,40 @@ interface ScheduledInvoice {
   cliente?: Client;
 }
 
+interface FormItem {
+  product: Product;
+  cantidad: number;
+  descuento: number;
+}
+
+const METODOS: Record<string, string> = {
+  "01": "Efectivo",
+  "16": "T. débito",
+  "18": "Prepago",
+  "19": "T. crédito",
+  "20": "Transferencia",
+};
+
 export default function ScheduledInvoices() {
-  const { access, allowed } = useAuth();
+  const { access } = useAuth();
   const [rows, setRows] = useState<ScheduledInvoice[]>([]),
     [clients, setClients] = useState<Client[]>([]),
+    [products, setProducts] = useState<Product[]>([]),
     [error, setError] = useState(""),
     [message, setMessage] = useState(""),
     [busy, setBusy] = useState(false),
     [showForm, setShowForm] = useState(false),
+    [search, setSearch] = useState(""),
     [form, setForm] = useState({
       cliente_id: "",
-      items: [] as Array<{ id: string; cantidad: number; descuento: number }>,
       metodo_pago: "20",
       credito_dias: 0,
       periodicidad: "mensual" as "diaria" | "semanal" | "mensual",
       dia_mes: 1,
-      dia_semana: 0,
+      dia_semana: 1,
       inicio: today(),
-    });
+    }),
+    [items, setItems] = useState<FormItem[]>([]);
 
   useEffect(() => {
     void load();
@@ -43,54 +61,72 @@ export default function ScheduledInvoices() {
 
   async function load() {
     try {
-      const [si, cli] = await Promise.all([
+      const [si, cli, pro] = await Promise.all([
         (db() as any).from("facturas_programadas").select("*"),
         db().from("clientes").select("*").order("nombre"),
+        db().from("catalogo_maquinaria").select("*").order("nombre"),
       ]);
       if (!si.error) setRows((si.data as ScheduledInvoice[]) ?? []);
       if (!cli.error) setClients((cli.data as Client[]) ?? []);
+      if (!pro.error) setProducts((pro.data as Product[]) ?? []);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error al cargar");
     }
   }
 
-  async function addItem() {
-    const prod = check(
-      await db()
-        .from("catalogo_maquinaria")
-        .select("id, nombre, precio")
-        .order("nombre"),
-    );
-    // Quick pick: here just for UI, real use would be a modal
+  const addItem = (p: Product) => {
+    if (items.some((i) => i.product.id === p.id)) return;
+    setItems((x) => [...x, { product: p, cantidad: 1, descuento: 0 }]);
+    setSearch("");
+  };
+
+  let summary: ReturnType<typeof preview> | null = null,
+    calcError = "";
+  try {
+    summary = items.length
+      ? preview(
+          items.map((i) => ({
+            quantity: i.cantidad,
+            price: Number(i.product.precio),
+            discount: i.descuento,
+            vat: i.product.iva,
+          })),
+        )
+      : null;
+  } catch (e) {
+    calcError = e instanceof Error ? e.message : "Importes inválidos";
   }
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!form.cliente_id || !form.items.length) {
+    if (!form.cliente_id || !items.length) {
       setError("Cliente y al menos un ítem requeridos");
       return;
     }
+    if (calcError) return;
     setBusy(true);
     setError("");
     try {
       const r = await check(
         await (db() as any).rpc("crear_factura_programada", {
           p_cliente: form.cliente_id,
-          p_items: form.items,
+          p_items: items.map((i) => ({
+            id: i.product.id,
+            cantidad: i.cantidad,
+            descuento: i.descuento,
+          })),
           p_metodo: form.metodo_pago,
           p_credito: form.credito_dias,
           p_periodicidad: form.periodicidad,
-          p_dia_mes: form.dia_mes,
-          p_dia_semana: form.dia_semana,
+          p_dia_mes: form.periodicidad === "mensual" ? form.dia_mes : 0,
+          p_dia_semana: form.periodicidad === "semanal" ? form.dia_semana : 0,
           p_inicio: form.inicio,
         }),
       );
-      setMessage("Factura programada creada (ID: " + r + ")");
+      setMessage("Factura programada con IA creada (ID: " + r + ")");
       setShowForm(false);
-      setForm({
-        ...form,
-        items: [],
-      });
+      setItems([]);
+      setForm({ ...form, cliente_id: "" });
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo crear");
@@ -119,20 +155,53 @@ export default function ScheduledInvoices() {
     }
   }
 
+  async function remove(row: ScheduledInvoice) {
+    if (
+      !window.confirm(
+        `¿Eliminar la factura programada de ${clientName(row.cliente_id)}? Las facturas ya emitidas no se borran.`,
+      )
+    )
+      return;
+    setBusy(true);
+    try {
+      check(
+        await (db() as any)
+          .from("facturas_programadas")
+          .delete()
+          .eq("id", row.id),
+      );
+      setMessage("Factura programada eliminada.");
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "No se pudo eliminar");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const clientName = (id: string) =>
+    clients.find((c) => c.id === id)?.nombre ?? id.slice(0, 8);
+
   return (
     <section>
       <div className="page-heading">
         <div>
           <p className="eyebrow">FINANZAS / PROGRAMADAS</p>
-          <h1>Facturas programadas.</h1>
+          <h1>Facturas programadas con IA.</h1>
           <p>
-            Crea plantillas que emitan facturas automáticamente (diario, semanal o
-            mensual). Solo plan Luxury.
+            La IA agenda y emite tus facturas automáticamente (diario, semanal
+            o mensual) con los ítems y precios de tu catálogo. Solo plan
+            Luxury.
           </p>
         </div>
-        <button className="button" onClick={() => setShowForm(!showForm)}>
-          {showForm ? "Ocultar" : "+ Nueva programada"}
-        </button>
+        <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+          <span className="pill pill-ia">
+            <Sparkles size={13} /> Automatización con IA
+          </span>
+          <button className="button" onClick={() => setShowForm(!showForm)}>
+            {showForm ? "Ocultar" : "+ Nueva programada"}
+          </button>
+        </div>
       </div>
 
       {error && <p className="error">{error}</p>}
@@ -147,47 +216,190 @@ export default function ScheduledInvoices() {
               {clients.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
             </select>
           </label>
-          <div style={{ display: "grid", gap: "8px" }}>
-            <h3>Ítems</h3>
-            <button type="button" className="secondary" onClick={() => alert("Selecciona productos del catálogo en una próxima versión")}>
-              Agregar ítem (pendiente UI completa)
-            </button>
+
+          <div className="section-label">
+            <h3>Ítems de la factura</h3>
+            <small>{items.length} seleccionados</small>
           </div>
-          <label>Método de pago
-            <select value={form.metodo_pago} onChange={(e) => setForm({ ...form, metodo_pago: e.target.value })}>
-              <option value="01">Efectivo</option>
-              <option value="16">Débito</option>
-              <option value="18">Prepago</option>
-              <option value="19">Tarjeta</option>
-              <option value="20">Otros</option>
-            </select>
-          </label>
-          <label>Crédito (días)
-            <input type="number" min="0" max="365" value={form.credito_dias} onChange={(e) => setForm({ ...form, credito_dias: Number(e.target.value) })} />
-          </label>
-          <label>Periodicidad
-            <select value={form.periodicidad} onChange={(e) => setForm({ ...form, periodicidad: e.target.value as any })}>
-              <option value="diaria">Diaria</option>
-              <option value="semanal">Semanal</option>
-              <option value="mensual">Mensual</option>
-            </select>
-          </label>
-          {form.periodicidad === "mensual" && (
-            <label>Día del mes (1-31)
-              <input type="number" min="1" max="31" value={form.dia_mes} onChange={(e) => setForm({ ...form, dia_mes: Number(e.target.value) })} />
-            </label>
+          <div className="search-field">
+            <Search size={16} />
+            <input
+              aria-label="Buscar producto o servicio"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar en tu catálogo por nombre o código…"
+            />
+          </div>
+          {search && (
+            <div className="product-list">
+              {products
+                .filter(
+                  (p) =>
+                    (p.nombre + p.codigo)
+                      .toLowerCase()
+                      .includes(search.toLowerCase()) &&
+                    !items.some((i) => i.product.id === p.id),
+                )
+                .slice(0, 6)
+                .map((p) => (
+                  <button type="button" key={p.id} onClick={() => addItem(p)}>
+                    <span className="product-icon">
+                      {p.tipo === "EQUIPO" ? "▧" : "▣"}
+                    </span>
+                    <span>
+                      <b>{p.nombre}</b>
+                      <small>
+                        {p.codigo} · IVA {p.iva}%
+                      </small>
+                    </span>
+                    <span>
+                      <b>{money(Number(p.precio))}</b>
+                      <small>{p.tipo === "EQUIPO" ? "por día" : "unidad"}</small>
+                    </span>
+                    <Plus size={16} />
+                  </button>
+                ))}
+              {!products.filter((p) =>
+                (p.nombre + p.codigo).toLowerCase().includes(search.toLowerCase()),
+              ).length && <p className="muted">Sin coincidencias en tu catálogo.</p>}
+            </div>
           )}
-          {form.periodicidad === "semanal" && (
-            <label>Día semana (0=Dom..6=Sáb)
-              <input type="number" min="0" max="6" value={form.dia_semana} onChange={(e) => setForm({ ...form, dia_semana: Number(e.target.value) })} />
-            </label>
+
+          <div className="item-table">
+            {items.map((i) => (
+              <div key={i.product.id} className="invoice-item">
+                <div>
+                  <b>{i.product.nombre}</b>
+                  <small>
+                    {money(Number(i.product.precio))} · IVA {i.product.iva}%
+                  </small>
+                </div>
+                <input
+                  aria-label={"Cantidad " + i.product.nombre}
+                  type="number"
+                  min="0.001"
+                  step="0.001"
+                  value={i.cantidad}
+                  onChange={(e) =>
+                    setItems((x) =>
+                      x.map((v) =>
+                        v.product.id === i.product.id
+                          ? { ...v, cantidad: Number(e.target.value) }
+                          : v,
+                      ),
+                    )
+                  }
+                />
+                <label>
+                  Descuento
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={i.descuento}
+                    onChange={(e) =>
+                      setItems((x) =>
+                        x.map((v) =>
+                          v.product.id === i.product.id
+                            ? { ...v, descuento: Number(e.target.value) }
+                            : v,
+                        ),
+                      )
+                    }
+                  />
+                </label>
+                <button
+                  type="button"
+                  aria-label={"Quitar " + i.product.nombre}
+                  onClick={() =>
+                    setItems((x) => x.filter((v) => v.product.id !== i.product.id))
+                  }
+                >
+                  <Trash2 size={15} />
+                </button>
+              </div>
+            ))}
+          </div>
+          {!items.length && (
+            <div className="empty-state">
+              Busca productos o servicios y agrégalos a la factura.
+            </div>
           )}
-          <label>Fecha inicio
-            <input type="date" value={form.inicio} onChange={(e) => setForm({ ...form, inicio: e.target.value })} required />
-          </label>
+          {calcError && <p className="error">{calcError}</p>}
+          {summary && (
+            <dl className="totals">
+              <div>
+                <dt>Subtotal</dt>
+                <dd>
+                  {money(
+                    (summary.bases[0] + summary.bases[5] + summary.bases[15]) /
+                      100,
+                  )}
+                </dd>
+              </div>
+              <div>
+                <dt>IVA</dt>
+                <dd>{money(summary.taxes / 100)}</dd>
+              </div>
+              <div className="grand-total">
+                <dt>Total por emisión</dt>
+                <dd>{money(summary.total / 100)}</dd>
+              </div>
+            </dl>
+          )}
+
+          <div className="field-pair">
+            <label>Método de pago
+              <select value={form.metodo_pago} onChange={(e) => setForm({ ...form, metodo_pago: e.target.value })}>
+                <option value="01">Efectivo · 01</option>
+                <option value="20">Transferencia · 20</option>
+                <option value="16">Tarjeta de débito · 16</option>
+                <option value="19">Tarjeta de crédito · 19</option>
+                <option value="18">Tarjeta prepago · 18</option>
+              </select>
+            </label>
+            <label>Crédito (días)
+              <input type="number" min="0" max="365" value={form.credito_dias} onChange={(e) => setForm({ ...form, credito_dias: Number(e.target.value) })} />
+            </label>
+          </div>
+          <div className="field-pair">
+            <label>Periodicidad
+              <select value={form.periodicidad} onChange={(e) => setForm({ ...form, periodicidad: e.target.value as any })}>
+                <option value="diaria">Diaria</option>
+                <option value="semanal">Semanal</option>
+                <option value="mensual">Mensual</option>
+              </select>
+            </label>
+            {form.periodicidad === "mensual" && (
+              <label>Día del mes
+                <select value={form.dia_mes} onChange={(e) => setForm({ ...form, dia_mes: Number(e.target.value) })}>
+                  {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
+                </select>
+              </label>
+            )}
+            {form.periodicidad === "semanal" && (
+              <label>Día de la semana
+                <select value={form.dia_semana} onChange={(e) => setForm({ ...form, dia_semana: Number(e.target.value) })}>
+                  {["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"].map((d, i) => (
+                    <option key={i} value={i}>{d}</option>
+                  ))}
+                </select>
+              </label>
+            )}
+            <label>Fecha inicio
+              <input type="date" value={form.inicio} onChange={(e) => setForm({ ...form, inicio: e.target.value })} required />
+            </label>
+          </div>
           <div className="form-actions">
-            <button disabled={busy} type="submit">
-              {busy ? "Guardando…" : "Crear programada"}
+            <button
+              className="btn-ai"
+              disabled={busy || !items.length || !!calcError}
+              type="submit"
+            >
+              <Sparkles size={16} />
+              {busy ? "Guardando…" : "Crear programada con IA"}
             </button>
             <button type="button" className="secondary" onClick={() => setShowForm(false)}>Cancelar</button>
           </div>
@@ -199,6 +411,7 @@ export default function ScheduledInvoices() {
           <thead>
             <tr>
               <th>Cliente</th>
+              <th>Ítems</th>
               <th>Próxima fecha</th>
               <th>Periodicidad</th>
               <th>Método</th>
@@ -209,23 +422,31 @@ export default function ScheduledInvoices() {
           <tbody>
             {rows.map((r) => (
               <tr key={r.id}>
-                <td>{r.cliente?.nombre ?? r.cliente_id.slice(0, 8)}</td>
+                <td>{r.cliente?.nombre ?? clientName(r.cliente_id)}</td>
+                <td>{r.items?.length ?? 0}</td>
                 <td>{r.proxima_fecha}</td>
-                <td>{r.periodicidad}{r.periodicidad === "mensual" && r.dia_mes ? " (día " + r.dia_mes + ")" : ""}{r.periodicidad === "semanal" && r.dia_semana !== null ? " (día " + r.dia_semana + ")" : ""}</td>
-                <td>{r.metodo_pago}</td>
+                <td>{r.periodicidad}{r.periodicidad === "mensual" && r.dia_mes ? " (día " + r.dia_mes + ")" : ""}{r.periodicidad === "semanal" && r.dia_semana !== null ? " (" + ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"][r.dia_semana] + ")" : ""}</td>
+                <td>{METODOS[r.metodo_pago] ?? r.metodo_pago}</td>
                 <td>
                   <span className="pill">{r.activa ? "Activa" : "Pausada"}</span>
                 </td>
                 <td>
                   <button className="secondary" onClick={() => void toggleActive(r)}>
                     {r.activa ? "Pausar" : "Activar"}
+                  </button>{" "}
+                  <button
+                    className="secondary"
+                    disabled={busy}
+                    onClick={() => void remove(r)}
+                  >
+                    Eliminar
                   </button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-        {!rows.length && <div className="empty-state">No hay facturas programadas.</div>}
+        {!rows.length && <div className="empty-state">No hay facturas programadas. Crea la primera con el botón de arriba.</div>}
       </div>
     </section>
   );

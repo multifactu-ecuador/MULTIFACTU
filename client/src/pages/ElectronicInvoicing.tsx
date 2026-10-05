@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, CheckCircle2, FileText, KeyRound, ReceiptText, Send } from "lucide-react";
+import { ArrowRight, CheckCircle2, FileText, KeyRound, ReceiptText, Send, ShieldCheck } from "lucide-react";
 import Brand from "../components/Brand";
 
 const steps = [
@@ -33,7 +33,7 @@ export default function ElectronicInvoicing() {
         <div className="info-section-heading"><p className="eyebrow">ASÍ FUNCIONA</p><h2>Un flujo pensado para que no pierdas el control.</h2></div>
         <ol className="invoicing-steps">{steps.map(({ icon: Icon, number, title, text }) => <li key={number}><span>{number}</span><Icon size={24} /><div><h3>{title}</h3><p>{text}</p></div></li>)}</ol>
       </section>
-      <section className="info-banner info-banner-warning"><CheckCircle2 size={28} /><div><h2>Claridad antes de emitir.</h2><p>La versión de demostración permite conocer el flujo. La emisión real requiere completar la configuración fiscal, usar un certificado válido y aprobar las pruebas técnicas correspondientes antes de ofrecer comprobantes autorizados.</p></div></section>
+      <section className="info-banner info-banner-warning"><CheckCircle2 size={28} /><div><h2>Importante: NO vendemos firmas electrónicas.</h2><p>MULTIFACTU es el sistema que prepara, firma y envía tus comprobantes, pero <b>no vendemos ni emitimos firmas electrónicas</b>. Tu empresa debe adquirir su certificado (.p12) en una entidad autorizada por el SRI. Una vez que la tengas, la subes a tu cuenta, verificas su contraseña y listo: emitirás en modo real. La autorización de cada comprobante depende del SRI y de la validez de tus datos.</p><a className="sda-cta" href="https://www.securitydata.net.ec/firma-electronica-en-ecuador/" target="_blank" rel="noreferrer"><ShieldCheck size={17} /> ¿No tienes firma electrónica? Cómprala en Security Data →</a></div></section>
       <section className="info-section info-faq">
         <p className="eyebrow">LO QUE ENCUENTRAS EN TU CUENTA</p>
         <div>
@@ -43,6 +43,6 @@ export default function ElectronicInvoicing() {
         </div>
       </section>
     </main>
-    <footer><Brand /><p>Ventas, alquileres, servicios y mantenimiento para Ecuador.</p><div><Link to="/inteligencia-negocios">Inteligencia de negocios</Link><Link to="/seguridad">Seguridad</Link><Link to="/terminos">Términos de servicio</Link><Link to="/privacidad">Política de privacidad</Link><Link to="/contrato-encargo">Contrato de encargo</Link></div><small>© 2026 MULTIFACTU · Emisión real sujeta a configuración y validación fiscal.</small></footer>
+    <footer><Brand /><p>Sistema de facturación para ventas, alquileres y servicios en Ecuador.</p><div><Link to="/inteligencia-negocios">Inteligencia de negocios</Link><Link to="/seguridad">Seguridad</Link><Link to="/terminos">Términos de servicio</Link><Link to="/privacidad">Política de privacidad</Link><Link to="/contrato-encargo">Contrato de encargo</Link></div><small>© 2026 MULTIFACTU · Emisión real sujeta a configuración y validación fiscal.</small></footer>
   </div>;
 }

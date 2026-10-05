@@ -12,8 +12,11 @@ import {
   BadgeCheck,
   FileCheck2,
   ServerCog,
+  Sparkles,
+  Zap,
 } from "lucide-react";
 import Brand from "../components/Brand";
+import WebChat from "../components/WebChat";
 export const plans = [
   {
     id: "inicial",
@@ -55,7 +58,8 @@ export const plans = [
       "Caja e ingresos y gastos",
       "Cuentas por cobrar y pagar",
       "Análisis de rentabilidad",
-      "Base para facturación programada",
+      "Facturación programada con IA",
+      "Asistente IA de reportes comerciales",
       "Base para integración SRI y firma electrónica",
     ],
   },
@@ -85,7 +89,7 @@ export default function Landing() {
       <main>
         <section className="hero">
           <div>
-            <p className="eyebrow">MULTIFACTU · NEGOCIOS DE ECUADOR</p>
+            <p className="eyebrow">MULTIFACTU · NEGOCIOS DE ECUADOR · POTENCIADO CON IA</p>
             <h1>
               Evoluciona
               <br />
@@ -187,7 +191,42 @@ export default function Landing() {
           <b>Facturación electrónica</b>
           <b>Maquinaria, equipos y herramientas</b>
           <b>Servicios y mantenimiento</b>
+          <b>Inteligencia artificial aplicada</b>
         </div>
+        <section className="tech-section tech-top">
+          <p className="eyebrow">TECNOLOGÍA QUE NOS RESPALDA</p>
+          <h2>Construido sobre gigantes.</h2>
+          <div className="tech-grid">
+            <article className="tech-card">
+              <img
+                className="tech-logo-img"
+                src="/brands/nvidia.svg"
+                alt="NVIDIA"
+                height="30"
+              />
+              <h3>Inteligencia artificial NVIDIA</h3>
+              <p>
+                RUFO, nuestro asistente, piensa con modelos Llama servidos en
+                NVIDIA NIM: respuestas en español al instante sobre tus ventas,
+                clientes y el uso del sistema. Tus datos nunca se usan para
+                entrenar modelos.
+              </p>
+            </article>
+            <article className="tech-card">
+              <span className="tech-logo supabase-logo">
+                <Zap size={15} />
+                supabase
+              </span>
+              <h3>Base de datos Supabase protegida</h3>
+              <p>
+                PostgreSQL empresarial con Row Level Security (cada empresa
+                solo ve lo suyo), Supabase Vault para cifrar la contraseña de
+                tu firma electrónica y almacenamiento privado para tus
+                documentos.
+              </p>
+            </article>
+          </div>
+        </section>
         <section className="marketing-section" id="modulos">
           <p className="eyebrow">LO QUE TENEMOS PARA TI</p>
           <h2>
@@ -213,9 +252,19 @@ export default function Landing() {
                 text: "Fechas, contratos, disponibilidad y garantías separadas.",
               },
               {
+                icon: FileCheck2,
+                title: "Proformas en 1 clic",
+                text: "Tu cliente aprueba la cotización desde su teléfono y la factura se emite sola.",
+              },
+              {
                 icon: ChartNoAxesCombined,
                 title: "Finanzas claras",
                 text: "Caja, cobros, gastos y cuentas en un mismo espacio.",
+              },
+              {
+                icon: Sparkles,
+                title: "Asistente IA",
+                text: "Pregunta en español: cuánto vendiste, quién te debe más y qué producto se mueve menos.",
               },
               {
                 icon: Users,
@@ -230,6 +279,40 @@ export default function Landing() {
             ].map(({ icon: Icon, title, text }, i) => (
               <article key={title}>
                 <span>0{i + 1}</span>
+                <Icon size={25} />
+                <h3>{title}</h3>
+                <p>{text}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+        <section className="marketing-section ai-section">
+          <p className="eyebrow">INTELIGENCIA ARTIFICIAL INCLUIDA</p>
+          <h2>
+            La IA trabaja
+            <br />
+            para tu negocio.
+          </h2>
+          <div className="module-grid">
+            {[
+              {
+                icon: Sparkles,
+                title: "Asistente de reportes",
+                text: "Pregunta en español simple: cuánto vendiste, quién te debe más, qué producto se mueve menos. Respuesta instantánea con tus datos.",
+              },
+              {
+                icon: CalendarDays,
+                title: "Facturación programada con IA",
+                text: "Agenda una vez y la IA emite tus facturas recurrentes en la fecha exacta, con tus precios y tu catálogo.",
+              },
+              {
+                icon: BadgeCheck,
+                title: "Verificación inteligente",
+                text: "Tu firma electrónica y contraseña se validan contra tu certificado real: caducidad y RUC incluidos antes de firmar.",
+              },
+            ].map(({ icon: Icon, title, text }, i) => (
+              <article key={title}>
+                <span>IA·{i + 1}</span>
                 <Icon size={25} />
                 <h3>{title}</h3>
                 <p>{text}</p>
@@ -273,10 +356,70 @@ export default function Landing() {
             ))}
           </div>
           <p className="scope-note">
-            La integración SRI de esta entrega es una simulación claramente
-            identificada. Firma real, autorización tributaria y cobros
-            comerciales requieren completar y validar la integración antes de
-            ofrecerlos.
+            La emisión real se activa cuando tu empresa sube su firma
+            electrónica (.p12), verifica su contraseña y completa sus datos
+            fiscales; mientras tanto el sistema opera en demostración
+            claramente identificada. MULTIFACTU no vende firmas electrónicas.
+          </p>
+          <div className="compare-wrap">
+            <table className="compare-table">
+              <thead>
+                <tr>
+                  <th>Compara los planes</th>
+                  <th>Inicial</th>
+                  <th>Pro</th>
+                  <th className="plan-lux">
+                    Luxury <span className="lux-tag">RECOMENDADO</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {(
+                  [
+                    ["Facturación electrónica y notas de crédito", 1, 1, 1],
+                    ["Inventario, productos y servicios", 1, 1, 1],
+                    ["Clientes y proformas con aprobación en línea", 1, 1, 1],
+                    ["Comprobantes: XML, RIDE PDF, WhatsApp y correo", 1, 1, 1],
+                    ["Alquiler con fechas, reservas y garantías", 0, 1, 1],
+                    ["Caja, cobros, gastos y cuentas por cobrar", 0, 0, 1],
+                    ["Facturación programada con IA", 0, 0, 1],
+                    ["Asistente IA de reportes comerciales", 0, 0, 1],
+                  ] as const
+                ).map(([feature, ini, pro, lux]) => (
+                  <tr key={feature}>
+                    <td>{feature}</td>
+                    {[ini, pro, lux].map((on, i) => (
+                      <td key={i} className={i === 2 ? "col-lux" : ""}>
+                        {on ? (
+                          <span className="compare-check">
+                            <Check size={13} />
+                          </span>
+                        ) : (
+                          <span className="no">—</span>
+                        )}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+                <tr className="compare-price">
+                  <td>Precio mensual (+ IVA)</td>
+                  <td>$6,99</td>
+                  <td>$11,99</td>
+                  <td className="col-lux">$18,99</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p className="compare-sda">
+            ¿Aún no tienes firma electrónica? Cómprala en{" "}
+            <a
+              href="https://www.securitydata.net.ec/firma-electronica-en-ecuador/"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Security Data
+            </a>{" "}
+            y actívala en tu cuenta en minutos.
           </p>
         </section>
         <section className="trial-section">
@@ -302,18 +445,19 @@ export default function Landing() {
         <div className="trust-grid">
           <article>
             <FileCheck2 size={26} />
-            <h3>Claves de acceso en demostración</h3>
+            <h3>Claves de acceso SRI</h3>
             <p>
-              Flujos de facturas y notas de crédito con claves de 49 dígitos y
-              secuenciales por establecimiento y punto de emisión.
+              Facturas y notas de crédito con clave de acceso de 49 dígitos
+              (módulo 11) y secuenciales atómicos por establecimiento y punto
+              de emisión.
             </p>
           </article>
           <article>
             <BadgeCheck size={26} />
-            <h3>Estructura tributaria inicial</h3>
+            <h3>Estructura tributaria completa</h3>
             <p>
-              IVA desglosado 0%, 5% y 15% y XML de demostración como base de
-              una futura integración tributaria.
+              IVA desglosado 0%, 5% y 15%, XML conforme al esquema del SRI
+              v1.1.0 y RIDE en PDF listo para compartir.
             </p>
           </article>
           <article>
@@ -334,14 +478,14 @@ export default function Landing() {
           </article>
         </div>
         <p className="scope-note">
-          En esta fase la firma XAdES y el envío al SRI están simulados. Antes
-          de operar en producción se debe completar la integración, validar la
-          ficha técnica vigente y configurar un certificado .p12 válido.
+          MULTIFACTU no vende firmas electrónicas ni declara respaldo oficial
+          del SRI. La firma XAdES-BES se genera con tu propio certificado
+          (.p12) y la autorización de cada comprobante depende del SRI.
         </p>
       </section>
       <footer>
         <Brand />
-        <p>Ventas, alquileres, servicios y mantenimiento para Ecuador.</p>
+        <p>Sistema de facturación para ventas, alquileres y servicios en Ecuador.</p>
         <div>
           <Link to="/facturacion-electronica">Facturación electrónica</Link>
           <Link to="/inteligencia-negocios">Inteligencia de negocios</Link>
@@ -355,6 +499,7 @@ export default function Landing() {
           © 2026 MULTIFACTU · Sin respaldo oficial del SRI declarado
         </small>
       </footer>
+      <WebChat />
     </div>
   );
 }

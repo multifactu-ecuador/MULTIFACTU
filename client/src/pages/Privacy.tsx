@@ -59,12 +59,19 @@ export default function Privacy() {
         <h2>4. Destinatarios y subencargados</h2>
         <p>
           El acceso se limita a personal autorizado y proveedores necesarios
-          para operar el servicio. La configuración actual utiliza servicios de
-          Supabase para autenticación, base de datos y almacenamiento. Todo
-          subencargado deberá estar sujeto a obligaciones de confidencialidad,
-          seguridad y tratamiento compatibles con este documento. La lista
-          actualizada de subencargados y sus ubicaciones debe publicarse en
-          [URL de subencargados] antes de la puesta en producción.
+          para operar el servicio. Los subencargados actuales son:
+        </p>
+        <ul>
+          <li><b>Supabase Inc.</b> (EE.UU.): autenticación, base de datos PostgreSQL, almacenamiento de archivos y funciones de servidor.</li>
+          <li><b>Vercel Inc.</b> (EE.UU.): alojamiento de la aplicación web.</li>
+          <li><b>NVIDIA Corp.</b> (NIM, EE.UU.): procesamiento de las preguntas del asistente de IA para generar respuestas; no se envían bases de datos completas ni se usan los datos para entrenar modelos.</li>
+          <li><b>PayPhone</b> (Ecuador): procesamiento de pagos de planes, cuando el Cliente compra.</li>
+        </ul>
+        <p>
+          Todo subencargado está sujeto a obligaciones de confidencialidad,
+          seguridad y tratamiento compatibles con este documento. La contraseña
+          del certificado de firma electrónica se almacena cifrada con
+          Supabase Vault y jamás se guarda en texto plano.
         </p>
 
         <h2>5. Transferencias internacionales</h2>
@@ -89,12 +96,16 @@ export default function Privacy() {
 
         <h2>7. Seguridad</h2>
         <p>
-          Aplicamos medidas técnicas y organizativas acordes al servicio, como
-          autenticación, controles de acceso por empresa y roles, aislamiento
-          de datos mediante reglas de base de datos y almacenamiento privado
-          para archivos configurados como privados. Ningún sistema elimina todo
-          riesgo: el Cliente debe proteger sus credenciales, limitar los
-          permisos de su equipo y reportar incidentes sin demora.
+          Aplicamos medidas técnicas y organizativas acordes al servicio:
+          autenticación con contraseñas de mínimo 12 caracteres, controles de
+          acceso por empresa y roles aplicados en la base de datos (Row Level
+          Security), aislamiento por inquilino, cifrado en tránsito (TLS),
+          almacenamiento privado para archivos, cifrado de la contraseña del
+          certificado .p12 con Supabase Vault y límites anti fuerza-bruta en
+          las funciones sensibles. Las preguntas al asistente de IA se procesan
+          de forma segura y no se comparten entre empresas. Ningún sistema
+          elimina todo riesgo: el Cliente debe proteger sus credenciales,
+          limitar los permisos de su equipo y reportar incidentes sin demora.
         </p>
 
         <h2>8. Derechos y consultas</h2>

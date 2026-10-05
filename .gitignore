@@ -9,3 +9,7 @@ server/.env.*
 !server/.env.example
 .env.local
 .env.*.local
+
+.vercel
+.env*
+supabase/.temp/

@@ -1,0 +1,49 @@
+name: Seguridad
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pruebas:
+    name: Tipos, pruebas, SQL y Edge Functions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Instalar dependencias exactas del lockfile
+        run: npm ci
+      - name: Typecheck del cliente
+        run: npm run typecheck
+      - name: Pruebas de lógica y del guard de seguridad
+        run: npm test
+      - name: Pruebas de base de datos (migraciones, RLS y aislamiento)
+        run: npm run test:sql
+      - name: Revisión de Edge Functions con Deno
+        run: npm run check:edge
+      - name: Build de producción
+        run: npm run build
+
+  auditoria:
+    name: Auditoría de dependencias
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Instalar dependencias exactas del lockfile
+        run: npm ci
+      - name: Puerta de auditoría (altas y críticas)
+        run: npm run audit:gate

@@ -115,9 +115,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
   const active =
     !!access &&
-    ["trial", "active"].includes(access.suscripcion.estado) &&
-    clock.now + clock.offset >= Date.parse(access.suscripcion.inicio) &&
-    clock.now + clock.offset < Date.parse(access.suscripcion.fin);
+    (access.superadmin === true ||
+      (["trial", "active"].includes(access.suscripcion.estado) &&
+        clock.now + clock.offset >= Date.parse(access.suscripcion.inicio) &&
+        clock.now + clock.offset < Date.parse(access.suscripcion.fin)));
   const allowed = (feature: Feature) =>
     active &&
     !!access?.funciones[feature] &&

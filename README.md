@@ -18,11 +18,12 @@ Abre http://localhost:5173. Sin credenciales puedes ver portada, planes y formul
 ## Preparar Supabase
 
 1. Crea un proyecto. En Authentication habilita Email y define Site URL `http://localhost:5173` y las URL de redirección autorizadas. En producción usa el dominio HTTPS real. Mantén confirmación de correo habilitada.
-2. Ejecuta **en orden**, una sola vez, los archivos `supabase/migrations/202610020001_schema.sql` a `202610020005_payments.sql` en SQL Editor. Alternativa con CLI Supabase: vincula el proyecto y ejecuta `supabase db push`.
+2. Ejecuta **en orden**, una sola vez, todas las migraciones de `supabase/migrations/` en SQL Editor. Alternativa con CLI Supabase: vincula el proyecto y ejecuta `supabase db push`.
 3. Configura la contraseña mínima de Auth a 12 caracteres. Completa `client/.env` con Project URL y la clave publishable/anon pública.
 4. Guarda los secretos de Edge Functions con CLI Supabase. Usa `supabase/functions/.env.example` como guía; sustituye el secreto del webhook por un valor aleatorio largo. No subas el archivo de secretos a git. Supabase proporciona sus variables internas URL/service_role.
-5. Despliega `supabase functions deploy sri-procesar --no-verify-jwt` y `supabase functions deploy planes-pago --no-verify-jwt`. Ambos handlers verifican su autenticación: secreto de servidor en el webhook y usuario Auth en pagos.
+5. Despliega `supabase functions deploy sri-procesar --no-verify-jwt`, `supabase functions deploy planes-pago --no-verify-jwt`, `supabase functions deploy generar-ride --no-verify-jwt` y `supabase functions deploy consultar-ruc --no-verify-jwt`. Los handlers verifican su autenticación internamente.
 6. Configura el webhook descrito en `docs/arquitectura.md`. Crea una cuenta desde `/registro`. El trigger crea empresa, administrador, cliente consumidor final y prueba Luxury.
+7. Para el autocompletado fiscal de empresa, configura los secretos y el proveedor descritos en [`docs/CONFIGURAR_API_RUC.md`](docs/CONFIGURAR_API_RUC.md).
 
 ## Planes y prueba
 
@@ -44,12 +45,12 @@ Los precios comerciales incluyen proformas, cuentas por pagar y análisis avanza
 - Alquiler con disponibilidad por intervalo, días de 24 horas redondeados hacia arriba y garantía fuera de la factura.
 - XML de factura, clave módulo 11 y flujo de recepción/autorización **simulados**, modal y descarga del XML demo. La simulación nunca usa el certificado ni llama al SRI real.
 - Finanzas: gráfico de métodos de cobro, abonos parciales, gastos, cuotas vencidas, cierres diarios y plantillas de recordatorio (sin pagos automáticos).
-- Perfil editable y subida privada de logo/certificado. El logo de la empresa todavía no se incrusta en un RIDE o contrato PDF.
+- Perfil editable y subida privada de logo/certificado; la contraseña del .p12 se cifra en Supabase Vault y sólo el backend la descifra al firmar. El logo de la empresa todavía no se incrusta en un RIDE o contrato PDF.
 - Pedidos de planes y adaptador PayPhone configurable. En modo demo no cobra ni activa suscripciones. En modo real confirma importe/moneda/transacción con el proveedor antes de activar.
 
 ## Qué falta para venderlo como sistema completo
 
-Firma XAdES-BES real en Deno, extracción segura de .p12 y caducidad/contraseña; validación con XSD oficial; SOAP real, sondeo, rechazos y contingencias; RIDE y contratos PDF; notas de crédito (tabla creada, emisión pendiente); proformas; pago de cuentas a proveedores; análisis de rentabilidad; facturación programada e IA; importaciones/Excel; recordatorios/email/WhatsApp; devoluciones y cierre definitivo de alquiler; recibos internos; sucursales y varias cajas; invitaciones de empleados; recuperación de contraseña y conciliación de pagos si el comprador no vuelve a la web; auditoría, monitoreo y copias/restauración verificadas.
+Firma XAdES-BES real en Deno, extracción segura de .p12 y caducidad/contraseña; validación con XSD oficial; SOAP real, sondeo, rechazos y contingencias; RIDE y contratos PDF; notas de crédito emisibles desde Comprobantes (documento 04); proformas; pago de cuentas a proveedores; análisis de rentabilidad; facturación programada e IA; importaciones/Excel; recordatorios/email/WhatsApp; devoluciones y cierre definitivo de alquiler; recibos internos; sucursales y varias cajas; invitaciones de empleados; recuperación de contraseña y conciliación de pagos si el comprador no vuelve a la web; auditoría, monitoreo y copias/restauración verificadas.
 
 Un recibo interno no debe presentarse como sustituto de un comprobante tributario obligatorio. Esta entrega no acredita cumplimiento del SRI 2026 ni respaldo oficial del SRI o de un proveedor de firma.
 

@@ -8,19 +8,18 @@ RLS filtra por tenant y permisos vigentes de `private.tiene_funcion()`. Las tabl
 
 AuthContext escucha onAuthStateChange, recupera el perfil, actualiza permisos y considera el tiempo de servidor. Los candados muestran la compra requerida; la base de datos aplica la misma restricción aunque alguien invoque la API directamente. Los administradores vencidos conservan acceso a sus pedidos y configuración de acceso para renovar. No hay política pública de lectura de documentos o certificados.
 
-## Webhook de facturas
+## Emisión automática (facturas y notas de crédito)
 
-En el Dashboard Supabase abre Database → Webhooks → Create webhook:
+La emisión no depende de una configuración manual fuera del repositorio. La migración `202610050026_emision_pg_net.sql` crea dos triggers con pg_net:
 
-- Nombre: `multifactu-factura-insert`.
-- Tabla: `public.facturas_sri`.
-- Evento: **INSERT** exclusivamente.
-- Tipo: HTTP Request, método POST.
-- URL: `https://TU-PROYECTO.supabase.co/functions/v1/sri-procesar`.
-- Headers: `Content-Type: application/json` y `x-webhook-secret: TU_SECRETO_LARGO`.
-- Timeout: configura el permitido por el Dashboard y revisa las ejecuciones en los logs.
+- `emision_sri` sobre `public.facturas_sri` → llama a `sri-procesar`.
+- `emision_nota_sri` sobre `public.notas_credito` → llama a `notas-procesar`.
 
-El secreto debe coincidir con SRI_WEBHOOK_SECRET de la función. Nunca configures este webhook desde el navegador ni pongas el secreto o service_role en el frontend. Supabase entrega `{type, schema, table, record, old_record}`; el handler valida el evento y vuelve a consultar la factura y sus detalles después del commit, evitando confiar en importes del payload.
+Ambos envían `POST` con `Content-Type: application/json`, la cabecera `x-webhook-secret` y el cuerpo `{type, schema, table, record: {id, tenant_id}, old_record: null}`, que es exactamente lo que las funciones esperan. La URL base y el secreto viven cifrados en Vault con el nombre `sri_emision_webhook` (JSON `{"base": "...", "secret": "..."}`); el secreto coincide con el secreto de entorno `SRI_WEBHOOK_SECRET`. Sin esa entrada el trigger no hace nada, así que una base nueva jamás rompe una inserción.
+
+El trigger es SECURITY DEFINER, corre después del INSERT y captura cualquier excepción: un fallo del webhook nunca aborta el INSERT del negocio. Sólo salta en INSERT; un UPDATE no vuelve a disparar nada.
+
+También puede existir un webhook del Dashboard (Database → Webhooks → INSERT → URL `https://TU-PROYECTO.supabase.co/functions/v1/sri-procesar`, header `x-webhook-secret`), pero es opcional: si avisan los dos, el segundo queda "omitido" porque el reclamo Pendiente → Procesando es atómico. Nunca configures un webhook desde el navegador ni pongas el secreto o service_role en el frontend. El handler valida el evento y vuelve a consultar la factura y sus detalles después del commit, evitando confiar en importes del payload.
 
 Un UPDATE no vuelve a disparar este webhook. La transición condicional Pendiente → Procesando reclama el trabajo con UUID; dos notificaciones no emiten dos veces. Después genera clave/XML, agrega una marca de firma **simulada**, construye dos peticiones SOAP usando un transporte mock (Recepción y Autorización) y guarda Autorizada o Error con `simulacion=true`. El número es `DEMO-...` y no tiene valor tributario. Para ensayar Error usa SRI_SIMULATION_RESULT=error y crea otra operación; no se modifica la preferencia desde una petición del cliente.
 
@@ -28,7 +27,7 @@ No hay worker de recuperación automático: una caída después de reclamar pued
 
 ## Firma y archivos
 
-Buckets privados `certificados`, `documentos`, `logos`. La primera carpeta debe ser el UUID del tenant. Sólo ADMIN con permiso activo sube/modifica certificados y logos; documentos fiscales sólo los escribirá el backend. No se captura contraseña .p12 en esta demo. Para firma real hay que diseñar manejo de secretos independiente del perfil y de la base pública, validar el certificado, firmar en memoria y verificar el XML resultante. Subir un .p12 no activa la emisión real.
+Buckets privados `certificados`, `documentos`, `logos`. La primera carpeta debe ser el UUID del tenant. Sólo ADMIN con permiso activo sube/modifica certificados y logos; documentos fiscales sólo los escribirá el backend. La contraseña del .p12 se guarda cifrada en Supabase Vault mediante la RPC `guardar_p12_password` (valida rol ADMIN y plan vigente); la columna en texto plano fue eliminada en la migración `202610050015_p12_vault.sql`. Las Edge Functions la descifran con `leer_p12_password`, ejecutable únicamente por `service_role` y protegida además por el claim del JWT. El navegador nunca recibe la contraseña descifrada. Subir un .p12 no activa la emisión real.
 
 ## Pagos
 

@@ -7,6 +7,7 @@ import {
   type SriLine,
 } from "../_shared/sri.ts";
 import { loadCertificate, realSriFlow, signXades } from "../_shared/sri-real.ts";
+import { guardar } from "../_shared/guard.ts";
 interface InsertEvent {
   type: "INSERT";
   schema: "public";
@@ -20,24 +21,10 @@ const json = (data: unknown, status = 200) =>
     headers: { "Content-Type": "application/json" },
   });
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-async function equalSecret(a: string, b: string) {
-  const encoder = new TextEncoder();
-  const [left, right] = await Promise.all([
-    crypto.subtle.digest("SHA-256", encoder.encode(a)),
-    crypto.subtle.digest("SHA-256", encoder.encode(b)),
-  ]);
-  let mismatch = 0;
-  const l = new Uint8Array(left), r = new Uint8Array(right);
-  for (let i = 0; i < 32; i++) mismatch |= l[i] ^ r[i];
-  return mismatch === 0;
-}
 Deno.serve(async (req) => {
-  if (req.method !== "POST") return json({ error: "Método no permitido" }, 405);
-  const expected = Deno.env.get("SRI_WEBHOOK_SECRET");
-  if (!expected || expected.length < 32)
-    return json({ error: "Webhook no configurado" }, 503);
-  if (!(await equalSecret(req.headers.get("x-webhook-secret") ?? "", expected)))
-    return json({ error: "No autorizado" }, 401);
+  // Denegar por defecto: ruta registrada, origen y secreto compartido.
+  const ctx = await guardar(req, "/notas-procesar");
+  if (ctx instanceof Response) return ctx;
   const url = Deno.env.get("SUPABASE_URL"),
     key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!url || !key) return json({ error: "Backend no configurado" }, 503);
@@ -104,12 +91,19 @@ Deno.serve(async (req) => {
     if (mode === "real") {
       const { data: empresa, error: eError } = await db
         .from("empresas")
-        .select("ruta_p12,p12_password")
+        .select("ruta_p12")
         .eq("id", tenant)
         .single();
-      if (eError || !empresa?.ruta_p12 || !empresa?.p12_password)
-        throw Error("Empresa sin .p12 o contraseña registrada");
-      const cert = await loadCertificate(db, empresa.ruta_p12, empresa.p12_password);
+      if (eError || !empresa?.ruta_p12)
+        throw Error("Empresa sin .p12 registrado");
+      // Contraseña cifrada en Vault: sólo service_role puede descifrarla.
+      const { data: p12Password, error: pwError } = await db.rpc(
+        "leer_p12_password",
+        { p_tenant: tenant },
+      );
+      if (pwError || !p12Password)
+        throw Error("Empresa sin contraseña de .p12 registrada");
+      const cert = await loadCertificate(db, empresa.ruta_p12, p12Password);
       signed = await signXades(draft.xml, cert.privateKeyPem, cert.certPem, cert.certDer, cert.issuerName, cert.serialNumber);
       result = await realSriFlow(signed, (nota.ambiente_sri as "pruebas" | "produccion") ?? "pruebas");
       mensaje = result.authorized ? "Nota de crédito autorizada por el SRI" : "El SRI no autorizó la nota de crédito";

@@ -44,6 +44,21 @@ export default function Customers() {
       setError(e instanceof Error ? e.message : "No se pudo guardar");
     }
   }
+  async function remove(c: Client) {
+    if (
+      !window.confirm(
+        `¿Eliminar al cliente "${c.nombre}"? Si tiene deuda pendiente el sistema lo impedirá.`,
+      )
+    )
+      return;
+    setError("");
+    try {
+      check(await (db() as any).rpc("eliminar_cliente", { p_id: c.id }));
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "No se pudo eliminar");
+    }
+  }
   return (
     <section>
       <div className="page-heading">
@@ -128,9 +143,18 @@ export default function Customers() {
                 <td>{c.direccion}</td>
                 <td>
                   {c.tipo_id !== "07" && access?.rol === "ADMIN" && (
-                    <button className="secondary" onClick={() => setEdit(c)}>
-                      Editar
-                    </button>
+                    <>
+                      <button className="secondary" onClick={() => setEdit(c)}>
+                        Editar
+                      </button>{" "}
+                      <button
+                        className="secondary"
+                        onClick={() => void remove(c)}
+                        title="Eliminar (bloqueado si tiene deuda)"
+                      >
+                        Eliminar
+                      </button>
+                    </>
                   )}
                 </td>
               </tr>

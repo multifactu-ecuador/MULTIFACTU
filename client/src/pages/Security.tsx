@@ -3,12 +3,12 @@ import { ArrowRight, Database, FileCheck2, KeyRound, Lock, ServerCog, ShieldChec
 import Brand from "../components/Brand";
 
 const controls = [
-  { icon: ShieldCheck, title: "Datos separados por empresa", text: "Cada cuenta trabaja en un espacio independiente. Las reglas de acceso de la base de datos evitan que una empresa consulte la información de otra." },
-  { icon: Lock, title: "Acceso con sesión protegida", text: "Las operaciones se realizan con una sesión autenticada y permisos por rol. Solo los administradores pueden realizar cambios sensibles de la empresa." },
-  { icon: KeyRound, title: "Firma electrónica protegida", text: "El flujo de firma está diseñado para validar el archivo .p12 y cifrar su contenido antes de guardarlo. La clave y la contraseña se usan únicamente durante la firma, en el backend privado." },
-  { icon: Database, title: "Información con controles de acceso", text: "Clientes, comprobantes, inventario y finanzas se relacionan con tu empresa y se consultan bajo controles de aislamiento por tenant." },
-  { icon: ServerCog, title: "Procesos sensibles fuera del navegador", text: "El navegador no debe recibir claves maestras, contraseñas de certificados ni archivos P12. Esos procesos pertenecen a servicios privados del servidor." },
-  { icon: FileCheck2, title: "Validaciones antes de firmar", text: "La preparación fiscal comprueba la vigencia del certificado y que su RUC o cédula coincida con la empresa antes de permitir una firma real." },
+  { icon: ShieldCheck, title: "Datos separados por empresa", text: "Cada cuenta trabaja en un espacio independiente. Las reglas de la base de datos (Row Level Security) impiden que una empresa consulte la información de otra, incluso llamando directo a la API." },
+  { icon: Lock, title: "Acceso con sesión protegida", text: "Sesión autenticada, contraseñas de mínimo 12 caracteres y roles ADMIN/CAJERO. Los permisos por plan los aplica PostgreSQL: no se pueden saltar desde el navegador." },
+  { icon: KeyRound, title: "Contraseña del .p12 cifrada en Vault", text: "La contraseña de tu firma se guarda cifrada con Supabase Vault (pgsodium). Nunca existe en texto plano: solo el backend la descifra en memoria durante la firma, y el botón «Verificar contraseña» la comprueba contra tu certificado real antes de guardarla." },
+  { icon: Database, title: "Información con controles de acceso", text: "Clientes, comprobantes, inventario y finanzas se relacionan con tu empresa. Las operaciones de dinero usan tokens idempotentes: ni un doble clic ni una recarga duplican cobros." },
+  { icon: ServerCog, title: "Procesos sensibles fuera del navegador", text: "El navegador nunca recibe contraseñas de certificados, archivos .p12 ni claves. Firma, verificación y envío al SRI ocurren en funciones privadas del servidor con límites anti fuerza-bruta." },
+  { icon: FileCheck2, title: "Validaciones antes de firmar", text: "Antes de firmar se comprueba que la contraseña abra el certificado, que esté vigente y que su RUC o cédula corresponda a tu empresa." },
 ];
 
 export default function Security() {
@@ -35,7 +35,7 @@ export default function Security() {
         <div className="info-section-heading"><p className="eyebrow">CATÁLOGO DE SEGURIDAD</p><h2>Cómo protegemos cada parte del sistema.</h2></div>
         <div className="security-grid">{controls.map(({ icon: Icon, title, text }) => <article key={title}><Icon size={25} /><h3>{title}</h3><p>{text}</p></article>)}</div>
       </section>
-      <section className="info-banner"><ShieldCheck size={28} /><div><h2>Seguridad verificable, no promesas vacías.</h2><p>Nunca debes compartir tu contraseña de firma por WhatsApp ni enviarla por correo. Cárgala únicamente desde el proceso seguro de tu cuenta.</p></div></section>
+      <section className="info-banner"><ShieldCheck size={28} /><div><h2>Seguridad verificable, no promesas vacías.</h2><p>Nunca compartas la contraseña de tu firma por WhatsApp ni correo: cárgala solo desde «Mi empresa» y verifícala con el botón correspondiente. El asistente de IA procesa tus preguntas de forma segura: los datos de tu empresa jamás se usan para entrenar modelos ni se comparten con otras cuentas.</p></div></section>
       <section className="info-section info-faq">
         <p className="eyebrow">PREGUNTAS FRECUENTES</p>
         <div>
@@ -45,6 +45,6 @@ export default function Security() {
         </div>
       </section>
     </main>
-    <footer><Brand /><p>Ventas, alquileres, servicios y mantenimiento para Ecuador.</p><div><Link to="/facturacion-electronica">Facturación electrónica</Link><Link to="/inteligencia-negocios">Inteligencia de negocios</Link><Link to="/terminos">Términos de servicio</Link><Link to="/privacidad">Política de privacidad</Link><Link to="/contrato-encargo">Contrato de encargo</Link></div><small>© 2026 MULTIFACTU · Seguridad explicada de forma transparente.</small></footer>
+    <footer><Brand /><p>Sistema de facturación para ventas, alquileres y servicios en Ecuador.</p><div><Link to="/facturacion-electronica">Facturación electrónica</Link><Link to="/inteligencia-negocios">Inteligencia de negocios</Link><Link to="/terminos">Términos de servicio</Link><Link to="/privacidad">Política de privacidad</Link><Link to="/contrato-encargo">Contrato de encargo</Link></div><small>© 2026 MULTIFACTU · Seguridad explicada de forma transparente.</small></footer>
   </div>;
 }

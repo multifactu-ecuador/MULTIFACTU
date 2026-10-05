@@ -33,22 +33,29 @@ export default function Legal() {
         <h2>2. Objeto y alcance</h2>
         <p>
           MULTIFACTU permite organizar ventas, clientes, inventario,
-          alquileres, cuentas y reportes, según el plan contratado. Las
-          funciones disponibles, límites de uso, precio e impuestos aplicables
-          son los informados en la oferta vigente al contratar. El Cliente es
-          responsable de verificar que la plataforma y el plan cubran sus
-          necesidades antes de utilizarla en su operación.
+          alquileres, cuentas y reportes, según el plan contratado. Incluye
+          cotizaciones (proformas) con aprobación en línea que generan la
+          factura automáticamente, facturación programada recurrente y un
+          asistente de inteligencia artificial que responde preguntas con los
+          datos del negocio. Las funciones disponibles, límites de uso, precio
+          e impuestos aplicables son los informados en la oferta vigente al
+          contratar. El Cliente es responsable de verificar que la plataforma
+          y el plan cubran sus necesidades antes de utilizarla en su operación.
         </p>
         <h2>3. Facturación electrónica</h2>
         <p>
           Cuando el Cliente complete la configuración fiscal —incluyendo RUC,
-          certificado .p12 vigente, establecimiento, punto de emisión y el
-          ambiente habilitado—, MULTIFACTU puede preparar, firmar y enviar
-          comprobantes electrónicos al SRI. La autorización, rechazo u otra
-          respuesta de cada comprobante depende exclusivamente del SRI y de la
-          validez de la información proporcionada por el Cliente. MULTIFACTU no
-          declara afiliación, respaldo oficial ni garantía de autorización
-          automática por parte del SRI.
+          certificado .p12 vigente cuya contraseña se verifica contra el propio
+          certificado, establecimiento, punto de emisión y el ambiente
+          habilitado—, MULTIFACTU puede preparar, firmar y enviar comprobantes
+          electrónicos al SRI. MULTIFACTU <b>no vende firmas electrónicas</b>:
+          el Cliente debe adquirir su certificado en una entidad autorizada por
+          el SRI. La autorización, rechazo u otra respuesta de cada comprobante
+          depende exclusivamente del SRI y de la validez de la información
+          proporcionada por el Cliente. MULTIFACTU no declara afiliación,
+          respaldo oficial ni garantía de autorización automática por parte
+          del SRI. Mientras la configuración fiscal esté incompleta, las
+          operaciones se identifican como demostración sin validez tributaria.
         </p>
         <h2>4. Cuenta, seguridad y responsabilidades del Cliente</h2>
         <p>
@@ -62,16 +69,28 @@ export default function Legal() {
         </p>
         <h2>5. Planes, prueba, pagos y cancelación</h2>
         <p>
-          Si se ofrece una prueba gratuita, su duración, funcionalidades y
-          condiciones se mostrarán antes del registro. Salvo que la oferta
-          indique expresamente lo contrario, la prueba no genera un cobro
-          automático. Un plan pagado se activa únicamente después de la
+          La prueba gratuita dura 7 días con todas las funciones del plan
+          superior (Luxury) y permite emitir hasta 10 facturas. No genera cobro
+          automático. Al agotarse el tiempo o el cupo de facturas, las
+          operaciones se bloquean hasta elegir un plan; los datos registrados
+          se conservan. Un plan pagado se activa únicamente después de la
           confirmación del medio de pago correspondiente. La cancelación evita
           renovaciones futuras, pero no elimina de forma automática obligaciones
           de pago ya causadas ni genera un reembolso de períodos efectivamente
           utilizados, salvo que la ley aplicable disponga otra cosa.
         </p>
-        <h2>6. Datos personales y confidencialidad</h2>
+        <h2>6. Asistente de inteligencia artificial</h2>
+        <p>
+          El asistente de IA responde consultas con base en los datos propios
+          del Cliente (ventas, cobros, inventario) y en el conocimiento del
+          funcionamiento de la plataforma. Las preguntas pueden ser procesadas
+          por un proveedor de inteligencia artificial (NVIDIA NIM) únicamente
+          para generar la respuesta; los datos del Cliente no se utilizan para
+          entrenar modelos ni se comparten con otras empresas. Las respuestas
+          son informativas y no sustituyen asesoría contable, tributaria o
+          legal profesional.
+        </p>
+        <h2>7. Datos personales y confidencialidad</h2>
         <p>
           El tratamiento de datos personales se rige por la <Link to="/privacidad">Política
           de privacidad</Link> y, cuando MULTIFACTU trate datos personales por
@@ -81,7 +100,7 @@ export default function Legal() {
           propios clientes, proveedores, personal y demás titulares que cargue
           al servicio.
         </p>
-        <h2>7. Disponibilidad, soporte y cambios</h2>
+        <h2>8. Disponibilidad, soporte y cambios</h2>
         <p>
           El Proveedor puede realizar mantenimiento, correcciones, mejoras de
           seguridad o cambios razonables en el servicio. Procurará informar con
@@ -91,7 +110,7 @@ export default function Legal() {
           respaldo ni recuperación ilimitados salvo que se pacten expresamente
           por escrito.
         </p>
-        <h2>8. Uso permitido y suspensión</h2>
+        <h2>9. Uso permitido y suspensión</h2>
         <p>
           No está permitido usar el servicio para actividades ilícitas,
           fraudulentas, que vulneren derechos de terceros, que intenten eludir
@@ -101,7 +120,7 @@ export default function Legal() {
           el servicio, cumplir una obligación legal o ante un incumplimiento
           material, comunicándolo cuando sea razonablemente posible.
         </p>
-        <h2>9. Propiedad intelectual y contenido</h2>
+        <h2>10. Propiedad intelectual y contenido</h2>
         <p>
           El software, marca, diseño y materiales de MULTIFACTU permanecen bajo
           titularidad del Proveedor o sus licenciantes. El Cliente conserva la
@@ -109,7 +128,7 @@ export default function Legal() {
           Proveedor una autorización limitada para tratarlo exclusivamente con
           la finalidad de prestar, proteger y mantener el servicio.
         </p>
-        <h2>10. Vigencia, terminación y ley aplicable</h2>
+        <h2>11. Vigencia, terminación y ley aplicable</h2>
         <p>
           Estos Términos permanecen vigentes mientras el Cliente use el
           servicio o mantenga obligaciones pendientes. Las solicitudes de
@@ -119,7 +138,7 @@ export default function Legal() {
           la República del Ecuador. Las partes procurarán resolver cualquier
           controversia de buena fe antes de acudir a la autoridad competente.
         </p>
-        <h2>11. Actualizaciones y contacto</h2>
+        <h2>12. Actualizaciones y contacto</h2>
         <p>
           MULTIFACTU podrá actualizar estos Términos cuando cambie el servicio,
           la normativa o sus prácticas. Una modificación material se comunicará

@@ -1,6 +1,10 @@
-import { useEffect, useState } from "react";
-import { db, check, money } from "../lib/supabase";
-import type { Invoice } from "../lib/types";
+import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
+import { LockKeyhole } from "lucide-react";
+import QRCode from "qrcode";
+import { db, check, money, sriRealListo } from "../lib/supabase";
+import { useAuth } from "../auth/AuthContext";
+import type { CreditNote, Invoice } from "../lib/types";
 
 const htmlEntities: Record<string, string> = {
   "&": "&amp;",
@@ -11,11 +15,31 @@ const htmlEntities: Record<string, string> = {
 };
 const escapeHtml = (value: unknown) =>
   String(value ?? "").replace(/[&<>"']/g, (character) => htmlEntities[character]);
+const dormir = (ms: number) => new Promise((resolver) => setTimeout(resolver, ms));
 
 export default function Documents() {
+  const { access } = useAuth();
   const [rows, setRows] = useState<Invoice[]>([]),
-    [error, setError] = useState("");
-  const load = async () =>
+    [error, setError] = useState(""),
+    [qrFor, setQrFor] = useState<Invoice | null>(null),
+    [notas, setNotas] = useState<CreditNote[]>([]),
+    [notaFor, setNotaFor] = useState<Invoice | null>(null),
+    [motivo, setMotivo] = useState(""),
+    [notaCargando, setNotaCargando] = useState(false),
+    [notaResultado, setNotaResultado] = useState<{ ok: boolean; texto: string } | null>(
+      null,
+    );
+  const realListo = sriRealListo(access?.empresa);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    if (qrFor?.clave_acceso && canvasRef.current) {
+      void QRCode.toCanvas(canvasRef.current, qrFor.clave_acceso, {
+        width: 240,
+        margin: 1,
+      });
+    }
+  }, [qrFor]);
+  const load = async () => {
     setRows(
       (check(
         await db()
@@ -24,6 +48,15 @@ export default function Documents() {
           .order("fecha", { ascending: false }),
       ) ?? []) as Invoice[],
     );
+    setNotas(
+      (check(
+        await db()
+          .from("notas_credito")
+          .select("id,factura_id,estado,motivo,total,clave_acceso,mensaje,creado_en")
+          .order("creado_en", { ascending: false }),
+      ) ?? []) as CreditNote[],
+    );
+  };
   useEffect(() => {
     void load().catch((e) => setError(e.message));
   }, []);
@@ -96,7 +129,7 @@ export default function Documents() {
         <b>Total:</b> ${moneyNum(row.total)}
       </div>
       ${(row as any).clave_acceso ? `<div style="text-align:center;margin-top:18px"><p><b>Clave de acceso:</b> ${escapeHtml((row as any).clave_acceso)}</p></div>` : ""}
-      <p style="margin-top:40px">Representación impresa del comprobante electrónico (RIDE) — fase de demostración.</p>
+      <p style="margin-top:40px">Representación impresa del comprobante electrónico (RIDE).</p>
       <button onclick="window.print()">Imprimir</button>
       <script>setTimeout(()=>window.print(),350);</script>
     </body></html>`;
@@ -156,21 +189,121 @@ export default function Documents() {
     link.click();
     URL.revokeObjectURL(url);
   }
+  function cerrarNota() {
+    if (notaCargando) return;
+    setNotaFor(null);
+    setMotivo("");
+    setNotaResultado(null);
+  }
+  async function emitirNota() {
+    if (!notaFor) return;
+    const texto = motivo.trim();
+    if (!texto) {
+      setNotaResultado({
+        ok: false,
+        texto: "Escribe el motivo de la nota de crédito.",
+      });
+      return;
+    }
+    setNotaCargando(true);
+    setNotaResultado(null);
+    try {
+      const id = check(
+        await db().rpc("crear_nota_credito", {
+          p_factura: notaFor.id,
+          p_motivo: texto,
+        }),
+      );
+      if (!id) throw Error("No se creó la nota de crédito.");
+      // La emisión corre en segundo plano (webhook): esperamos su resultado.
+      let estado = "Pendiente",
+        detalle = "";
+      for (let intento = 0; intento < 15; intento++) {
+        await dormir(2000);
+        const nota = check(
+          await db()
+            .from("notas_credito")
+            .select("estado,mensaje,clave_acceso")
+            .eq("id", id)
+            .maybeSingle(),
+        );
+        if (!nota) break;
+        estado = nota.estado;
+        detalle =
+          nota.mensaje ??
+          (nota.clave_acceso ? `Clave de acceso ${nota.clave_acceso}` : "");
+        if (estado === "Autorizada" || estado === "Error") break;
+      }
+      if (estado === "Autorizada")
+        setNotaResultado({
+          ok: true,
+          texto: "Nota de crédito emitida. " + detalle,
+        });
+      else if (estado === "Error")
+        setNotaResultado({
+          ok: false,
+          texto: detalle || "El SRI no autorizó la nota de crédito.",
+        });
+      else
+        setNotaResultado({
+          ok: true,
+          texto:
+            "Nota de crédito creada y en cola de emisión; el sistema la terminará automáticamente.",
+        });
+    } catch (e) {
+      setNotaResultado({ ok: false, texto: (e as Error).message });
+    } finally {
+      setNotaCargando(false);
+      await load().catch(() => undefined);
+    }
+  }
+  const ncPorFactura = new Map<string, CreditNote>();
+  for (const nota of notas)
+    if (!ncPorFactura.has(nota.factura_id))
+      ncPorFactura.set(nota.factura_id, nota);
   return (
     <section>
       <div className="page-heading">
         <div>
-          <p className="eyebrow">COMPROBANTES / DEMOSTRACIÓN</p>
+          <p className="eyebrow">
+            {realListo
+              ? "COMPROBANTES / FACTURACIÓN REAL"
+              : "COMPROBANTES / DEMOSTRACIÓN"}
+          </p>
           <h1>Tu operación, ordenada.</h1>
           <p>
-            Los estados de esta versión son simulados y no prueban aceptación
-            del SRI.
+            {realListo
+              ? "Tu empresa tiene sus documentos completos para emitir en modo real."
+              : "Los estados de esta versión son simulados y no prueban aceptación del SRI."}
           </p>
         </div>
         <button className="secondary" onClick={() => void load()}>
           Actualizar
         </button>
       </div>
+      {!realListo && (
+        <div className="card emision-block" role="alert">
+          <p className="eyebrow">FACTURACIÓN ELECTRÓNICA</p>
+          <div className="emision-alert">
+            <span className="emision-warn">⚠</span>
+            <div>
+              <h3>
+                Su cuenta no está habilitada para la emisión de Documentos
+                Electrónicos
+              </h3>
+              <p>
+                Para poder sincronizar sus documentos electrónicos es necesario
+                que conecte su cuenta al SRI: carga tu firma electrónica
+                (.p12), su contraseña y completa los datos de tu empresa.
+              </p>
+            </div>
+          </div>
+          <Link className="emision-cta" to="/app/perfil">
+            <LockKeyhole size={14} />
+            Habilitar Cuenta
+          </Link>
+        </div>
+      )}
       {error && <p className="error">{error}</p>}
       <div className="card table-wrap">
         <table>
@@ -185,13 +318,35 @@ export default function Documents() {
             </tr>
           </thead>
           <tbody>
-            {rows.map((r) => (
+            {rows.map((r) => {
+              const nc = ncPorFactura.get(r.id);
+              const ncActiva =
+                !!nc &&
+                (nc.estado === "Pendiente" ||
+                  nc.estado === "Procesando" ||
+                  nc.estado === "Autorizada");
+              return (
               <tr key={r.id}>
                 <td>{r.fecha}</td>
-                <td>{r.id.slice(0, 8)}</td>
+                <td>
+                  {r.id.slice(0, 8)}
+                  {nc && (
+                    <span
+                      className={
+                        "pill pill-nc" +
+                        (nc.estado === "Autorizada" ? " pill-real" : "")
+                      }
+                      title={`Nota de crédito · ${nc.motivo}`}
+                    >
+                      NC · {nc.estado}
+                    </span>
+                  )}
+                </td>
                 <td>{money(Number(r.total))}</td>
                 <td>
-                  <span className="pill">{r.estado} · demo</span>
+                  <span className={r.simulacion && !realListo ? "pill" : "pill pill-real"}>
+                    {r.estado} · {r.simulacion ? "demo" : "SRI"}
+                  </span>
                 </td>
                 <td>
                   {r.numero_autorizacion ??
@@ -201,11 +356,29 @@ export default function Documents() {
                 <td>
                   <button
                     className="secondary"
+                    disabled={r.estado !== "Autorizada" || ncActiva}
+                    title={
+                      r.estado !== "Autorizada"
+                        ? "Sólo las facturas autorizadas pueden tener nota de crédito"
+                        : ncActiva
+                          ? "Esta factura ya tiene una nota de crédito"
+                          : "Emitir nota de crédito (documento 04)"
+                    }
+                    onClick={() => {
+                      setNotaFor(r);
+                      setMotivo("");
+                      setNotaResultado(null);
+                    }}
+                  >
+                    Nota crédito
+                  </button>{" "}
+                  <button
+                    className="secondary"
                     onClick={() =>
                       void download(r.id).catch((e) => setError(e.message))
                     }
                   >
-                    XML demo
+                    XML
                   </button>{" "}
                   <button
                     className="secondary"
@@ -223,6 +396,15 @@ export default function Documents() {
                   >
                     Descargar PDF RIDE
                   </button>{" "}
+                  {r.clave_acceso && (
+                    <button
+                      className="secondary"
+                      title="Ver código QR de la clave de acceso"
+                      onClick={() => setQrFor(r)}
+                    >
+                      QR
+                    </button>
+                  )}{" "}
                   {(() => {
                     const email = (r as any).clientes?.email ?? "";
                     const subject = encodeURIComponent(
@@ -270,13 +452,104 @@ export default function Documents() {
                   })()}
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
         {!rows.length && (
           <div className="empty-state">Todavía no hay comprobantes.</div>
         )}
       </div>
+      {qrFor && (
+        <div className="modal-backdrop">
+          <section
+            className="emission-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Código QR del comprobante"
+          >
+            <button
+              className="modal-close"
+              onClick={() => setQrFor(null)}
+              aria-label="Cerrar"
+            >
+              ×
+            </button>
+            <p className="eyebrow">CLAVE DE ACCESO</p>
+            <h2>QR del comprobante</h2>
+            <canvas ref={canvasRef} style={{ alignSelf: "center" }} />
+            <small style={{ wordBreak: "break-all" }}>{qrFor.clave_acceso}</small>
+            <small>
+              Escanéalo para consultar el comprobante por su clave de acceso de
+              49 dígitos. También va incluido en el PDF RIDE.
+            </small>
+            <button onClick={() => setQrFor(null)}>Cerrar</button>
+          </section>
+        </div>
+      )}
+      {notaFor && (
+        <div className="modal-backdrop">
+          <section
+            className="emission-modal nota-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Nota de crédito"
+          >
+            <button
+              className="modal-close"
+              onClick={cerrarNota}
+              aria-label="Cerrar"
+            >
+              ×
+            </button>
+            <p className="eyebrow">NOTA DE CRÉDITO · DOCUMENTO 04</p>
+            <h2>Emitir nota de crédito</h2>
+            <p>
+              Sobre la factura <b>{notaFor.id.slice(0, 8)}</b> por{" "}
+              {money(Number(notaFor.total))}. El motivo es obligatorio y viaja
+              dentro del documento emitido.
+            </p>
+            {!notaResultado ? (
+              <textarea
+                className="nc-motivo"
+                rows={4}
+                maxLength={500}
+                value={motivo}
+                placeholder="Ej.: Devolución de mercadería entregada con defectos."
+                onChange={(e) => setMotivo(e.target.value)}
+              />
+            ) : (
+              <p
+                className={notaResultado.ok ? "nc-ok" : "nc-fallo"}
+                aria-live="polite"
+              >
+                {notaResultado.texto}
+              </p>
+            )}
+            <div className="nc-actions">
+              {!notaResultado ? (
+                <>
+                  <button
+                    className="secondary"
+                    onClick={cerrarNota}
+                    disabled={notaCargando}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={() => void emitirNota()}
+                    disabled={notaCargando || !motivo.trim()}
+                  >
+                    {notaCargando ? "Emitiendo…" : "Emitir nota"}
+                  </button>
+                </>
+              ) : (
+                <button onClick={cerrarNota}>Cerrar</button>
+              )}
+            </div>
+          </section>
+        </div>
+      )}
     </section>
   );
 }

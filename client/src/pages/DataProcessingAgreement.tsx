@@ -87,14 +87,22 @@ export default function DataProcessingAgreement() {
 
         <h2>7. Subencargados y transferencias</h2>
         <p>
-          El Responsable autoriza el uso de subencargados necesarios para la
-          infraestructura y operación, incluidos los servicios de Supabase
-          configurados para autenticación, base de datos y almacenamiento,
-          siempre que queden sujetos a obligaciones equivalentes de protección.
-          MULTIFACTU publicará la lista vigente de subencargados en [URL de
-          subencargados] y comunicará cambios materiales con antelación
+          El Responsable autoriza el uso de los siguientes subencargados,
+          necesarios para la infraestructura y operación, siempre sujetos a
+          obligaciones equivalentes de protección:
+        </p>
+        <ul>
+          <li><b>Supabase Inc.</b> (EE.UU.): autenticación, base de datos PostgreSQL, almacenamiento y funciones de servidor.</li>
+          <li><b>Vercel Inc.</b> (EE.UU.): alojamiento de la aplicación web.</li>
+          <li><b>NVIDIA Corp.</b> (NIM, EE.UU.): procesamiento puntual de las preguntas del asistente de IA para generar respuestas, sin usar los datos para entrenar modelos.</li>
+          <li><b>PayPhone</b> (Ecuador): procesamiento de pagos de los planes contratados.</li>
+        </ul>
+        <p>
+          MULTIFACTU comunicará cambios materiales de esta lista con antelación
           razonable. Las transferencias internacionales se realizarán con las
-          garantías exigidas por la normativa aplicable.
+          garantías exigidas por la normativa aplicable. La contraseña del
+          certificado de firma electrónica se trata únicamente cifrada
+          (Supabase Vault) y nunca en texto plano.
         </p>
 
         <h2>8. Incidentes y derechos de los titulares</h2>

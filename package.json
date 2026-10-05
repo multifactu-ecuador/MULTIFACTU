@@ -10,9 +10,10 @@
     "build": "npm run build -w client",
     "typecheck": "npm run typecheck -w client",
     "test": "node --test tests/*.test.ts",
+    "audit:gate": "node tests/audit-gate.mjs",
     "test:server": "node --test --experimental-strip-types server/tests/*.test.ts",
     "test:sql": "node tests/database.mjs",
-    "check:edge": "deno check supabase/functions/sri-procesar/index.ts supabase/functions/planes-pago/index.ts supabase/functions/notas-procesar/index.ts supabase/functions/procesar-programadas/index.ts supabase/functions/generar-ride/index.ts",
+    "check:edge": "deno check supabase/functions/sri-procesar/index.ts supabase/functions/planes-pago/index.ts supabase/functions/notas-procesar/index.ts supabase/functions/procesar-programadas/index.ts supabase/functions/generar-ride/index.ts supabase/functions/consultar-ruc/index.ts supabase/functions/verificar-p12/index.ts supabase/functions/asistente/index.ts supabase/functions/asistente-web/index.ts",
     "typecheck:server": "tsc -p server/tsconfig.json"
   },
   "devDependencies": {
@@ -26,9 +27,9 @@
     "node": "22.x"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.117.2",
-    "@xmldom/xmldom": "^0.8.15",
-    "node-forge": "^1.4.0",
+    "@supabase/supabase-js": "2.117.2",
+    "@xmldom/xmldom": "0.8.15",
+    "node-forge": "1.4.0",
     "pdf-lib": "^1.17.1",
     "qrcode": "^1.5.3",
     "xml-crypto": "6.1.1"

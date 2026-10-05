@@ -62,11 +62,12 @@ editar, ni reenvíes el P12 fuera del backend Node.
 
 ## Migración desde el flujo heredado
 
-`empresas.p12_password` es una columna heredada en texto plano. El nuevo
-servicio no la lee ni la escribe. Una vez que cada empresa haya cargado de
-nuevo su firma mediante este flujo cifrado, elimina esa columna mediante una
-migración de mantenimiento aprobada; hacerlo antes descartaría contraseñas que
-puedan seguir en uso.
+La columna heredada `empresas.p12_password` en texto plano fue eliminada por la
+migración `202610050015_p12_vault.sql`: sus valores se migraron a Supabase
+Vault y las Edge Functions los descifran con la RPC `leer_p12_password` (sólo
+`service_role`). Si este servicio Node llega a operar, debe consumir la misma
+RPC o migrar las empresas al cifrado propio de `emisor_firmas` antes de
+cortar el flujo Vault.
 
 La firma se verifica criptográficamente en las pruebas locales, pero antes de
 producción debe pasar el ambiente de pruebas del SRI con los XSD y la ficha

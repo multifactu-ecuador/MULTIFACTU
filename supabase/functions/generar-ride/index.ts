@@ -1,10 +1,13 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { generateRidePdf } from "../_shared/ride-pdf.ts";
+import { guardar } from "../_shared/guard.ts";
 
+const origin = Deno.env.get("APP_ORIGIN")?.replace(/\/$/, "");
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin": origin ?? "http://localhost:5173",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
+  Vary: "Origin",
 };
 
 interface InvoiceRow {
@@ -38,40 +41,24 @@ const json = (data: unknown, status = 200) =>
   });
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  if (req.method !== "POST") return json({ error: "Método no permitido" }, 405);
-
-  const authHeader = req.headers.get("authorization") ?? "";
-  const token = authHeader.match(/^Bearer\s+(.+)$/i)?.[1];
-  if (!token) return json({ error: "No autorizado" }, 401);
-
-  const url = Deno.env.get("SUPABASE_URL")!;
-  const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const url = Deno.env.get("SUPABASE_URL");
+  const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!url || !key) return json({ error: "Backend no configurado" }, 503);
   const supabase = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
 
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser(token);
-  if (authError || !user) return json({ error: "Sesión no válida" }, 401);
+  // Denegar por defecto: origen, método y sesión de usuario en un solo punto.
+  const ctx = await guardar(req, "/generar-ride", corsHeaders, supabase);
+  if (ctx instanceof Response) return ctx;
 
   const body = await req.json().catch(() => null) as { id?: unknown } | null;
   const id = typeof body?.id === "string" ? body.id : null;
   if (!id) return json({ error: "ID requerido" }, 400);
 
-  const { data: profile, error: profileError } = await supabase
-    .from("usuarios_perfiles")
-    .select("tenant_id")
-    .eq("id", user.id)
-    .maybeSingle();
-  if (profileError || !profile) return json({ error: "Sin empresa asignada" }, 403);
-
   const { data: inv, error } = await supabase
     .from("facturas_sri")
     .select("*")
     .eq("id", id)
-    .eq("tenant_id", profile.tenant_id)
+    .eq("tenant_id", ctx.tenant)
     .maybeSingle();
   if (error || !inv) return json({ error: "Factura no encontrada" }, 404);
 
@@ -79,7 +66,7 @@ Deno.serve(async (req) => {
     .from("factura_detalles")
     .select("*")
     .eq("factura_id", id)
-    .eq("tenant_id", profile.tenant_id);
+    .eq("tenant_id", ctx.tenant);
   if (detailsError) return json({ error: "No se pudieron cargar los detalles" }, 500);
   const detalles = (det ?? []) as any[];
 

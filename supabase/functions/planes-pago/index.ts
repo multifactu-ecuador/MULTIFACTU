@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2.117.2";
+import { guardar } from "../_shared/guard.ts";
 import {
   PLAN_BASE,
   provider,
@@ -21,10 +22,6 @@ Deno.serve(async (req) => {
       status,
       headers: { ...cors, "Content-Type": "application/json" },
     });
-  if (req.headers.get("origin") && req.headers.get("origin") !== origin)
-    return json({ error: "Origen no permitido" }, 403);
-  if (req.method === "OPTIONS") return new Response(null, { headers: cors });
-  if (req.method !== "POST") return json({ error: "Método no permitido" }, 405);
   const url = Deno.env.get("SUPABASE_URL"),
     secret = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!url || !secret || !origin)
@@ -32,21 +29,10 @@ Deno.serve(async (req) => {
   const admin = createClient(url, secret, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
-  const bearer = req.headers.get("Authorization")?.replace(/^Bearer\s+/i, "");
-  if (!bearer) return json({ error: "Inicia sesión" }, 401);
-  const {
-    data: { user },
-    error: authError,
-  } = await admin.auth.getUser(bearer);
-  if (authError || !user) return json({ error: "Sesión inválida" }, 401);
-  const { data: profile, error: profileError } = await admin
-    .from("usuarios_perfiles")
-    .select("tenant_id,rol")
-    .eq("id", user.id)
-    .single();
-  if (profileError || profile.rol !== "ADMIN")
-    return json({ error: "Requiere administrador" }, 403);
-  const tenant = profile.tenant_id;
+  // Denegar por defecto: origen, método, sesión y rol ADMIN en un solo punto.
+  const ctx = await guardar(req, "/planes-pago", cors, admin);
+  if (ctx instanceof Response) return ctx;
+  const tenant = ctx.tenant;
   let activeOrder: string | undefined;
   try {
     const input = await req.json();
@@ -85,7 +71,7 @@ Deno.serve(async (req) => {
           .insert({
             id,
             tenant_id: tenant,
-            usuario_id: user.id,
+            usuario_id: ctx.uid,
             plan: input.plan,
             token: input.token,
             client_tx: crypto.randomUUID().replaceAll("-", "").slice(0, 15),
