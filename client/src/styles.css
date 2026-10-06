@@ -558,7 +558,7 @@
 }
 .tech-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 16px;
 }
 .tech-card {
@@ -605,49 +605,14 @@
   line-height: 1.9;
   margin: 0;
 }
-.tech-monitor {
-  display: inline-flex;
-  align-items: center;
-  gap: 13px;
-  margin-top: 18px;
-  padding: 13px 22px;
-  border: 1px solid #29292f;
-  border-radius: 999px;
-  background: #0c0c0e;
-  color: #9a9aa2;
-  font-size: 13.5px;
-  line-height: 1.4;
+@media (max-width: 1100px) {
+  .tech-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
-.tech-monitor img {
-  display: block;
-  height: 30px;
-  width: auto;
-}
-.tech-monitor span {
-  color: #f5f5f6;
-  font-weight: 700;
-  font-size: 15px;
-  letter-spacing: -0.2px;
-}
-.tech-monitor em {
-  font-style: normal;
-  border-left: 1px solid #2c2c31;
-  padding-left: 12px;
-}
-@media (max-width: 1000px) {
+@media (max-width: 640px) {
   .tech-grid {
     grid-template-columns: 1fr;
-  }
-  .tech-monitor {
-    display: flex;
-    width: fit-content;
-    max-width: 100%;
-    flex-wrap: wrap;
-    border-radius: 12px;
-  }
-  .tech-monitor em {
-    border-left: 0;
-    padding-left: 0;
   }
 }
 /* Tabla comparativa de planes (colorida) */

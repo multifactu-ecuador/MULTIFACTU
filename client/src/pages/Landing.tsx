@@ -13,7 +13,7 @@ import {
   BadgeCheck,
   FileCheck2,
   ServerCog,
-  Sparkles,
+  RotateCcw,
   Brain,
   Target,
 } from "lucide-react";
@@ -217,10 +217,9 @@ export default function Landing() {
               />
               <h3>Inteligencia artificial NVIDIA</h3>
               <p>
-                RUFO, nuestro asistente, piensa con modelos Llama servidos en
-                NVIDIA NIM: respuestas en español al instante sobre tus ventas,
-                clientes y el uso del sistema. Tus datos nunca se usan para
-                entrenar modelos.
+                RUFO responde al instante en español con modelos Llama
+                servidos en NVIDIA NIM. Tus datos nunca se usan para entrenar
+                modelos.
               </p>
             </article>
             <article className="tech-card">
@@ -232,10 +231,8 @@ export default function Landing() {
               />
               <h3>Base de datos Supabase protegida</h3>
               <p>
-                PostgreSQL empresarial con Row Level Security (cada empresa
-                solo ve lo suyo), Supabase Vault para cifrar la contraseña de
-                tu firma electrónica y almacenamiento privado para tus
-                documentos.
+                PostgreSQL con Row Level Security: cada empresa solo ve lo
+                suyo. Vault cifra la contraseña de tu firma electrónica.
               </p>
             </article>
             <article className="tech-card">
@@ -247,17 +244,23 @@ export default function Landing() {
               />
               <h3>Autenticación con Clerk</h3>
               <p>
-                El acceso a MULTIFACTU lo gestiona Clerk: inicio de sesión
-                seguro con verificación de correo, recuperación controlada y
-                bloqueo de intentos sospechosos. Las sesiones se validan antes
-                de tocar tus datos.
+                Clerk gestiona tu acceso: verificación de correo,
+                recuperación controlada y bloqueo de intentos sospechosos.
               </p>
             </article>
-          </div>
-          <div className="tech-monitor">
-            <img src="/brands/betterstack.svg" alt="Better Stack" height="15" />
-            <span>Better Stack</span>
-            <em>Seguridad y disponibilidad monitoreadas 24/7 con alertas en minutos</em>
+            <article className="tech-card">
+              <img
+                className="tech-logo-img"
+                src="/brands/betterstack.svg"
+                alt="Better Stack"
+                height="30"
+              />
+              <h3>Disponibilidad con Better Stack</h3>
+              <p>
+                Web, API y emisión SRI se comprueban cada 3 minutos. Si algo
+                cae, hay alerta en minutos y el estado es público.
+              </p>
+            </article>
           </div>
         </section>
         <section className="marketing-section" id="modulos">
@@ -295,9 +298,9 @@ export default function Landing() {
                 text: "Caja, cobros, gastos y cuentas en un mismo espacio.",
               },
               {
-                icon: Sparkles,
-                title: "Asistente IA",
-                text: "Pregunta en español: cuánto vendiste, quién te debe más y qué producto se mueve menos.",
+                icon: RotateCcw,
+                title: "Notas de crédito",
+                text: "Anula comprobantes emitidos con su nota de crédito en un paso.",
               },
               {
                 icon: Users,
@@ -319,40 +322,7 @@ export default function Landing() {
             ))}
           </div>
         </section>
-        <section className="marketing-section ai-section">
-          <p className="eyebrow">INTELIGENCIA ARTIFICIAL INCLUIDA</p>
-          <h2>
-            La IA trabaja
-            <br />
-            para tu negocio.
-          </h2>
-          <div className="module-grid">
-            {[
-              {
-                icon: Sparkles,
-                title: "Asistente de reportes",
-                text: "Pregunta en español y respóndete al instante: ventas, deudores, caja.",
-              },
-              {
-                icon: CalendarDays,
-                title: "Facturación programada con IA",
-                text: "Agenda una vez; la IA emite tus facturas recurrentes en la fecha exacta.",
-              },
-              {
-                icon: BadgeCheck,
-                title: "Verificación inteligente",
-                text: "Valida tu firma electrónica y su vigencia antes de firmar.",
-              },
-            ].map(({ icon: Icon, title, text }, i) => (
-              <article key={title}>
-                <span>IA·{i + 1}</span>
-                <Icon size={25} />
-                <h3>{title}</h3>
-                <p>{text}</p>
-              </article>
-            ))}
-          </div>
-        </section>
+
         <section className="marketing-section rufo-section" id="rufo">
           <img className="rufo-logo" src="/brands/rufo-ia-blanco.png" alt="RUFO IA" />
           <p className="eyebrow">TU ASISTENTE IA</p>
@@ -526,33 +496,32 @@ export default function Landing() {
             <FileCheck2 size={26} />
             <h3>Claves de acceso SRI</h3>
             <p>
-              Facturas y notas de crédito con clave de acceso de 49 dígitos
-              (módulo 11) y secuenciales atómicos por establecimiento y punto
-              de emisión.
+              Clave de acceso de 49 dígitos (módulo 11) y secuencias atómicas
+              por establecimiento y punto de emisión.
             </p>
           </article>
           <article>
             <BadgeCheck size={26} />
             <h3>Estructura tributaria completa</h3>
             <p>
-              IVA desglosado 0%, 5% y 15%, XML conforme al esquema del SRI
-              v1.1.0 y RIDE en PDF listo para compartir.
+              IVA 0%, 5% y 15%, XML conforme al esquema del SRI v1.1.0 y RIDE
+              en PDF listo para compartir.
             </p>
           </article>
           <article>
             <Lock size={26} />
             <h3>Tus datos aislados</h3>
             <p>
-              Cada empresa solo accede a su información: aislamiento por
-              tenant con Row Level Security en toda la base de datos.
+              Aislamiento por tenant con Row Level Security en todas las
+              tablas: cada empresa solo accede a lo suyo.
             </p>
           </article>
           <article>
             <ServerCog size={26} />
             <h3>Infraestructura con controles</h3>
             <p>
-              Configuración con PostgreSQL, cifrado en tránsito (TLS) y
-              certificados en almacenamiento privado.
+              PostgreSQL, cifrado en tránsito (TLS) y certificados en
+              almacenamiento privado.
             </p>
           </article>
         </div>

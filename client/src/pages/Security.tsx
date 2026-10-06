@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, Brain, Database, FileCheck2, Gauge, KeyRound, Lock, ServerCog, ShieldCheck, Webhook, Workflow } from "lucide-react";
+import { ArrowRight, Brain, Database, FileCheck2, Gauge, Globe, KeyRound, ListChecks, Lock, ServerCog, ShieldCheck, Webhook, Workflow } from "lucide-react";
 import Brand from "../components/Brand";
 
 const controls = [
@@ -13,6 +13,8 @@ const controls = [
   { icon: Gauge, title: "Límites en cada función", text: "Cada endpoint valida origen, sesión, rol y secreto antes de responder, con cupo de intentos en firma, emisiones y consultas: ni fuerza bruta ni abuso de la API." },
   { icon: Workflow, title: "Seguridad auditada en cada cambio", text: "Cada actualización pasa pruebas automáticas de base de datos y una auditoría de dependencias con alertas de seguridad; las vulnerabilidades conocidas se revisan con fecha límite." },
   { icon: Webhook, title: "Eventos firmados y tareas protegidas", text: "Los webhooks y tareas automáticas exigen un secreto compartido: nada entra al sistema sin validarse y los intentos quedan registrados." },
+  { icon: Globe, title: "Cifrado en tránsito (HTTPS)", text: "Toda la comunicación entre tu navegador y el sistema viaja cifrada con TLS: ni en redes públicas ni en redes privadas puede alguien leer tus datos en el camino." },
+  { icon: ListChecks, title: "Datos validados antes de guardarse", text: "Los formularios validan formato, tipo y tamaño de archivos y longitudes antes de enviar: la información inconsistente nunca entra a la base de datos." },
 ];
 
 export default function Security() {
@@ -41,6 +43,10 @@ export default function Security() {
           <article className="security-ally">
             <div className="security-ally-brand"><img src="/brands/clerk-wordmark-blanco.png" alt="Clerk" height="28" /><span>ALIADO EN SEGURIDAD</span></div>
             <div><h3>Tu identidad la gestiona Clerk</h3><p>Inicio de sesión, verificación de correo, recuperación de contraseña y límites contra fuerza bruta los gestionamos con Clerk, empresa especializada en autenticación. El servidor valida cada sesión antes de consultar o modificar cualquier dato de tu empresa.</p></div>
+          </article>
+          <article className="security-ally">
+            <div className="security-ally-brand"><img src="/brands/betterstack.svg" alt="Better Stack" height="28" /><span>ALIADO EN SEGURIDAD</span></div>
+            <div><h3>Disponibilidad vigilada con Better Stack</h3><p>Nuestra web, las funciones de API y el flujo de emisión SRI se comprueban cada 3 minutos desde Better Stack: si algo cae, hay alerta en minutos y la incidencia queda publicada en la página de estado.</p></div>
           </article>
         </div>
       </section>
