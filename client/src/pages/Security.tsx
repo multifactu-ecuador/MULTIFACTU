@@ -34,7 +34,7 @@ export default function Security() {
       <section className="info-hero">
         <p className="eyebrow">SEGURIDAD Y PRIVACIDAD</p>
         <h1>Tu información empresarial merece controles claros.</h1>
-        <p>MULTIFACTU está diseñado para separar los datos de cada empresa, limitar los accesos y mantener los procesos fiscales sensibles fuera del navegador.</p>
+        <p>MULTIFACTU está diseñado para separar los datos de cada empresa, limitar los accesos y mantener los procesos fiscales sensibles fuera del navegador. Un sistema seguro por diseño: esa es nuestra ventaja competitiva.</p>
         <div className="info-actions"><Link className="button light" to="/registro">Crear cuenta gratis <ArrowRight size={17} /></Link><Link to="/privacidad">Ver política de privacidad</Link></div>
       </section>
       <section className="info-section">

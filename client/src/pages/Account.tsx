@@ -270,6 +270,43 @@ export default function Account() {
           cambiarla.
         </small>
       </form>
+      <section className="card security-summary">
+        <h2>Seguridad de tu cuenta</h2>
+        <p className="summary-lead">
+          La seguridad es nuestra ventaja competitiva. Esto es lo que protege
+          tus datos hoy:
+        </p>
+        <ul>
+          <li>
+            <b>Sesión protegida con Clerk</b> — verificación de identidad y
+            bloqueo de intentos sospechosos.
+          </li>
+          <li>
+            <b>Datos aislados por empresa</b> — las reglas de la base de datos
+            impiden que otra cuenta vea tu información.
+          </li>
+          <li>
+            <b>Firma cifrada en Vault</b> — la contraseña de tu .p12 jamás se
+            guarda en texto plano.
+          </li>
+          <li>
+            <b>Sistema vigilado 24/7</b> — Better Stack comprueba la web y la
+            emisión cada 3 minutos.
+          </li>
+          <li>
+            <b>Cifrado TLS en todo el tráfico</b> — ni en redes públicas se
+            pueden leer tus datos en el camino.
+          </li>
+        </ul>
+        <a
+          href="/seguridad"
+          target="_blank"
+          rel="noreferrer"
+          className="summary-link"
+        >
+          Ver los 12 controles del sistema ↗
+        </a>
+      </section>
     </section>
   );
 }

@@ -498,7 +498,12 @@ export default function Landing() {
       </main>
       <section className="trust-section">
         <p className="eyebrow">CONFIANZA Y CUMPLIMIENTO</p>
-        <h2>Una base para tu facturación electrónica</h2>
+        <h2>La seguridad es nuestra ventaja competitiva</h2>
+        <p className="trust-lead">
+          No es un extra: es la base del sistema. Aislamiento de datos por
+          empresa, firma electrónica cifrada y vigilancia 24/7 —{" "}
+          <Link to="/seguridad">mira los 12 controles que aplicamos</Link>.
+        </p>
         <div className="trust-grid">
           <article>
             <FileCheck2 size={26} />
