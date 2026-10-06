@@ -37,7 +37,12 @@ export default function Security() {
       </section>
       <section className="info-section">
         <div className="info-section-heading"><p className="eyebrow">CATÁLOGO DE SEGURIDAD</p><h2>Cómo protegemos cada parte del sistema.</h2></div>
-        <div className="security-grid">{controls.map(({ icon: Icon, title, text }) => <article key={title}><Icon size={25} /><h3>{title}</h3><p>{text}</p></article>)}</div>
+        <div className="security-grid">{controls.map(({ icon: Icon, title, text }) => <article key={title}><Icon size={25} /><h3>{title}</h3><p>{text}</p></article>)}
+          <article className="security-ally">
+            <div className="security-ally-brand"><img src="/brands/clerk-wordmark-blanco.png" alt="Clerk" height="28" /><span>ALIADO EN SEGURIDAD</span></div>
+            <div><h3>Tu identidad la gestiona Clerk</h3><p>Inicio de sesión, verificación de correo, recuperación de contraseña y límites contra fuerza bruta los gestionamos con Clerk, empresa especializada en autenticación. El servidor valida cada sesión antes de consultar o modificar cualquier dato de tu empresa.</p></div>
+          </article>
+        </div>
       </section>
       <section className="info-banner"><ShieldCheck size={28} /><div><h2>Seguridad verificable, no promesas vacías.</h2><p>Cada función del servidor valida origen, sesión y rol antes de responder; la firma electrónica jamás sale de procesos privados y su contraseña vive cifrada en Vault. RUFO, el asistente de IA, trabaja solo con los datos de tu empresa —memoria que tú controlas—, nunca con los de otras cuentas ni para entrenar modelos. Nunca compartas la contraseña de tu firma por WhatsApp ni correo: cárgala solo desde «Mi empresa» y verifícala con el botón correspondiente. Documento completo: <Link to="/politica-seguridad">Política de seguridad de la información</Link>.</p></div></section>
       <section className="info-section info-faq">

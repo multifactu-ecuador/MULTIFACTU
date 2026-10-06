@@ -558,7 +558,7 @@
 }
 .tech-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 16px;
 }
 .tech-card {
@@ -618,7 +618,7 @@
   line-height: 1.9;
   margin: 0;
 }
-@media (max-width: 800px) {
+@media (max-width: 1000px) {
   .tech-grid {
     grid-template-columns: 1fr;
   }
@@ -1445,6 +1445,33 @@
   color: #96969f;
   font-size: 13px;
   line-height: 1.8;
+}
+.security-grid .security-ally {
+  grid-column: span 3;
+  display: flex;
+  align-items: center;
+  gap: 46px;
+}
+.security-ally-brand {
+  flex: 0 0 230px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 15px;
+}
+.security-ally-brand img {
+  display: block;
+  height: 28px;
+  width: auto;
+}
+.security-ally-brand span {
+  font-size: 10.5px;
+  font-weight: 750;
+  letter-spacing: 1.7px;
+  color: #83838d;
+}
+.security-ally h3 {
+  margin-top: 0;
 }
 .info-banner {
   display: flex;
@@ -2924,6 +2951,11 @@ a.business-tile:focus-visible {
   .invoicing-steps li,
   .report-grid article {
     min-height: 0;
+  }
+  .security-ally {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 18px;
   }
   .insight-metrics {
     grid-template-columns: 1fr;

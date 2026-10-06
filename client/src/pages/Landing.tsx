@@ -237,6 +237,21 @@ export default function Landing() {
                 documentos.
               </p>
             </article>
+            <article className="tech-card">
+              <img
+                className="tech-logo-img"
+                src="/brands/clerk-wordmark-blanco.png"
+                alt="Clerk"
+                height="30"
+              />
+              <h3>Autenticación con Clerk</h3>
+              <p>
+                El acceso a MULTIFACTU lo gestiona Clerk: inicio de sesión
+                seguro con verificación de correo, recuperación controlada y
+                bloqueo de intentos sospechosos. Las sesiones se validan antes
+                de tocar tus datos.
+              </p>
+            </article>
           </div>
         </section>
         <section className="marketing-section" id="modulos">
