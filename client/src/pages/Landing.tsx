@@ -14,7 +14,6 @@ import {
   FileCheck2,
   ServerCog,
   Sparkles,
-  Zap,
   Brain,
   Target,
 } from "lucide-react";
@@ -225,10 +224,12 @@ export default function Landing() {
               </p>
             </article>
             <article className="tech-card">
-              <span className="tech-logo supabase-logo">
-                <Zap size={15} />
-                supabase
-              </span>
+              <img
+                className="tech-logo-img"
+                src="/brands/supabase.svg"
+                alt="Supabase"
+                height="30"
+              />
               <h3>Base de datos Supabase protegida</h3>
               <p>
                 PostgreSQL empresarial con Row Level Security (cada empresa
