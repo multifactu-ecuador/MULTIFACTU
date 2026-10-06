@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { ArrowRight, Brain, Database, FileCheck2, Gauge, Globe, KeyRound, ListChecks, Lock, ServerCog, ShieldCheck, Webhook, Workflow } from "lucide-react";
-import Brand from "../components/Brand";
+import MarketingFooter from "../components/MarketingFooter";
+import MarketingHeader from "../components/MarketingHeader";
 
 const controls = [
   { icon: ShieldCheck, title: "Datos separados por empresa", text: "Cada cuenta trabaja en un espacio independiente. Las reglas de la base de datos (Row Level Security) impiden que una empresa consulte la información de otra, incluso llamando directo a la API." },
@@ -19,20 +20,13 @@ const controls = [
 
 export default function Security() {
   return <div className="marketing info-marketing">
-    <header className="marketing-header">
-      <Brand />
-      <nav>
-        <Link to="/facturacion-electronica">Facturación electrónica</Link>
-        <Link to="/inteligencia-negocios">Inteligencia</Link>
-        <Link to="/seguridad">Seguridad</Link>
-        <Link to="/alquileres">Alquileres</Link>
-        <Link to="/#planes">Planes</Link>
-      </nav>
-      <div><Link className="text-link" to="/login">Iniciar sesión</Link><Link className="button light" to="/registro">Crear cuenta gratis ↗</Link></div>
-    </header>
+    <MarketingHeader />
     <main className="info-main">
       <section className="info-hero">
-        <p className="eyebrow">SEGURIDAD Y PRIVACIDAD</p>
+        <div className="hero-pills">
+          <p className="eyebrow">SEGURIDAD Y PRIVACIDAD</p>
+          <span className="ai-tag">✦ IA integrada · RUFO</span>
+        </div>
         <h1>Tu información empresarial merece controles claros.</h1>
         <p>MULTIFACTU está diseñado para separar los datos de cada empresa, limitar los accesos y mantener los procesos fiscales sensibles fuera del navegador. Un sistema seguro por diseño: esa es nuestra ventaja competitiva.</p>
         <div className="info-actions"><Link className="button light" to="/registro">Crear cuenta gratis <ArrowRight size={17} /></Link><Link to="/privacidad">Ver política de privacidad</Link></div>
@@ -57,10 +51,10 @@ export default function Security() {
           <article><h3>¿Otra empresa puede ver mis comprobantes?</h3><p>No. Los datos se consultan dentro del espacio de la empresa autenticada.</p></article>
           <article><h3>¿Dónde se usa mi firma electrónica?</h3><p>Solo en el proceso privado de firmado cuando habilitas el flujo fiscal real; no se entrega al navegador.</p></article>
           <article><h3>¿Qué debo hacer si cambia mi certificado?</h3><p>Actualízalo desde la configuración de la empresa antes de que venza y confirma que el RUC del certificado sea el correcto.</p></article>
-          <article><h3>¿RUFO aprende de otros usuarios?</h3><p>No. Sus recuerdos y hallazgos son de tu empresa, se confirman manualmente y no se usan para entrenar modelos ni se comparten entre cuentas.</p></article>
+          <article className="ai-card"><h3>¿RUFO aprende de otros usuarios?</h3><p>No. Sus recuerdos y hallazgos son de tu empresa, se confirman manualmente y no se usan para entrenar modelos ni se comparten entre cuentas.</p></article>
         </div>
       </section>
     </main>
-    <footer><Brand /><p>Sistema de facturación para ventas, alquileres y servicios en Ecuador.</p><div><Link to="/facturacion-electronica">Facturación electrónica</Link><Link to="/inteligencia-negocios">Inteligencia de negocios</Link><Link to="/terminos">Términos de servicio</Link><Link to="/privacidad">Política de privacidad</Link><Link to="/contrato-encargo">Contrato de encargo</Link><Link to="/cookies">Política de cookies</Link><Link to="/cumplimiento-legal">Cumplimiento legal</Link><Link to="/reembolsos">Política de reembolsos</Link></div><small>© 2026 MULTIFACTU · Seguridad explicada de forma transparente.</small></footer>
+    <MarketingFooter note="© 2026 MULTIFACTU · Seguridad explicada de forma transparente." />
   </div>;
 }

@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
-import Brand from "../components/Brand";
+import MarketingFooter from "../components/MarketingFooter";
+import MarketingHeader from "../components/MarketingHeader";
 import { LEGAL_UPDATED_DATE, REFUND_VERSION } from "../lib/legal";
 
 /**
@@ -12,10 +13,7 @@ import { LEGAL_UPDATED_DATE, REFUND_VERSION } from "../lib/legal";
 export default function RefundPolicy() {
   return (
     <div className="marketing legal">
-      <header>
-        <Brand />
-        <Link className="button light" to="/registro">Crear cuenta</Link>
-      </header>
+      <MarketingHeader />
       <main>
         <p className="eyebrow">DOCUMENTO LEGAL</p>
         <h1>Política de reembolsos</h1>
@@ -121,6 +119,7 @@ export default function RefundPolicy() {
           <Link to="/privacidad">Política de privacidad</Link>.
         </p>
       </main>
+      <MarketingFooter />
     </div>
   );
 }

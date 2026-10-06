@@ -1,14 +1,12 @@
 import { Link } from "react-router-dom";
-import Brand from "../components/Brand";
+import MarketingFooter from "../components/MarketingFooter";
+import MarketingHeader from "../components/MarketingHeader";
 import { COMPLIANCE_VERSION, LEGAL_UPDATED_DATE } from "../lib/legal";
 
 export default function CumplimientoLegal() {
   return (
     <div className="marketing legal">
-      <header>
-        <Brand />
-        <Link className="button light" to="/registro">Crear cuenta</Link>
-      </header>
+      <MarketingHeader />
       <main>
         <p className="eyebrow">DOCUMENTO LEGAL</p>
         <h1>Cumplimiento legal y medios de recurso (Ecuador y SRI)</h1>
@@ -96,6 +94,7 @@ export default function CumplimientoLegal() {
           <Link to="/politica-seguridad">Política de seguridad</Link>
         </p>
       </main>
+      <MarketingFooter />
     </div>
   );
 }

@@ -1,13 +1,11 @@
 import { Link } from "react-router-dom";
-import Brand from "../components/Brand";
+import MarketingFooter from "../components/MarketingFooter";
+import MarketingHeader from "../components/MarketingHeader";
 import { LEGAL_EFFECTIVE_DATE, TERMS_VERSION } from "../lib/legal";
 export default function Legal() {
   return (
     <div className="marketing legal">
-      <header>
-        <Brand />
-        <Link className="button light" to="/registro">Crear cuenta</Link>
-      </header>
+      <MarketingHeader />
       <main>
         <p className="eyebrow">DOCUMENTO LEGAL</p>
         <h1>Términos de servicio</h1>
@@ -161,6 +159,7 @@ export default function Legal() {
           o comunícate al <a href="tel:0987516088">0987516088</a>.
         </p>
       </main>
+      <MarketingFooter />
     </div>
   );
 }

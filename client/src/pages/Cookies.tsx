@@ -1,14 +1,12 @@
 import { Link } from "react-router-dom";
-import Brand from "../components/Brand";
+import MarketingFooter from "../components/MarketingFooter";
+import MarketingHeader from "../components/MarketingHeader";
 import { COOKIES_VERSION, LEGAL_UPDATED_DATE } from "../lib/legal";
 
 export default function Cookies() {
   return (
     <div className="marketing legal">
-      <header>
-        <Brand />
-        <Link className="button light" to="/registro">Crear cuenta</Link>
-      </header>
+      <MarketingHeader />
       <main>
         <p className="eyebrow">DOCUMENTO LEGAL</p>
         <h1>Política de cookies</h1>
@@ -67,6 +65,7 @@ export default function Cookies() {
           <Link to="/terminos">Términos de servicio</Link>.
         </p>
       </main>
+      <MarketingFooter />
     </div>
   );
 }

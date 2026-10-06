@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { ArrowRight, CheckCircle2, FileText, KeyRound, ReceiptText, Send, ShieldCheck } from "lucide-react";
-import Brand from "../components/Brand";
+import MarketingFooter from "../components/MarketingFooter";
+import MarketingHeader from "../components/MarketingHeader";
 
 const steps = [
   { icon: ReceiptText, number: "01", title: "Configura tu empresa", text: "Registra los datos de tu negocio, RUC, establecimiento y punto de emisión. Esta información identifica el comprobante." },
@@ -11,20 +12,13 @@ const steps = [
 
 export default function ElectronicInvoicing() {
   return <div className="marketing info-marketing">
-    <header className="marketing-header">
-      <Brand />
-      <nav>
-        <Link to="/facturacion-electronica">Facturación electrónica</Link>
-        <Link to="/inteligencia-negocios">Inteligencia</Link>
-        <Link to="/seguridad">Seguridad</Link>
-        <Link to="/alquileres">Alquileres</Link>
-        <Link to="/#planes">Planes</Link>
-      </nav>
-      <div><Link className="text-link" to="/login">Iniciar sesión</Link><Link className="button light" to="/registro">Crear cuenta gratis ↗</Link></div>
-    </header>
+    <MarketingHeader />
     <main className="info-main">
       <section className="info-hero">
-        <p className="eyebrow">FACTURACIÓN ELECTRÓNICA</p>
+        <div className="hero-pills">
+          <p className="eyebrow">FACTURACIÓN ELECTRÓNICA</p>
+          <span className="ai-tag">✦ IA integrada · RUFO</span>
+        </div>
         <h1>De una venta a un comprobante, paso a paso.</h1>
         <p>Organiza la información de la venta, prepara el comprobante y mantén un historial claro para tu empresa y tus clientes.</p>
         <div className="info-actions"><Link className="button light" to="/registro">Probar MULTIFACTU <ArrowRight size={17} /></Link><Link to="/seguridad">Cómo protegemos tu firma</Link></div>
@@ -40,9 +34,10 @@ export default function ElectronicInvoicing() {
           <article><h3>Clientes y datos fiscales ordenados</h3><p>Consulta el historial del cliente y utiliza sus datos al preparar futuras operaciones.</p></article>
           <article><h3>Impuestos y totales visibles</h3><p>Revisa subtotales, descuentos e IVA antes de confirmar la operación.</p></article>
           <article><h3>Comprobantes y RIDE</h3><p>Consulta el estado de cada documento y descarga su representación cuando esté disponible.</p></article>
+          <article className="ai-card"><h3>✦ Asistente IA integrado: RUFO</h3><p>Pregunta en español por ventas, deudores, caja e inventario: RUFO responde al instante con los datos reales de tu empresa, siempre aislados por negocio.</p></article>
         </div>
       </section>
     </main>
-    <footer><Brand /><p>Sistema de facturación para ventas, alquileres y servicios en Ecuador.</p><div><Link to="/inteligencia-negocios">Inteligencia de negocios</Link><Link to="/seguridad">Seguridad</Link><Link to="/terminos">Términos de servicio</Link><Link to="/privacidad">Política de privacidad</Link><Link to="/contrato-encargo">Contrato de encargo</Link><Link to="/cookies">Política de cookies</Link><Link to="/cumplimiento-legal">Cumplimiento legal</Link><Link to="/reembolsos">Política de reembolsos</Link></div><small>© 2026 MULTIFACTU · Emisión real sujeta a configuración y validación fiscal.</small></footer>
+    <MarketingFooter />
   </div>;
 }

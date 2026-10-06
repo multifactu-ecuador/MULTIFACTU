@@ -323,7 +323,9 @@ export default function Landing() {
             ].map(({ icon: Icon, title, text }, i) => (
               <article key={title}>
                 <span>0{i + 1}</span>
-                <Icon size={25} />
+                <i className="mod-ico">
+                  <Icon size={25} />
+                </i>
                 <h3>{title}</h3>
                 <p>{text}</p>
               </article>
@@ -363,7 +365,9 @@ export default function Landing() {
             ].map(({ icon: Icon, title, text }, i) => (
               <article key={title}>
                 <span>RUFO·{i + 1}</span>
-                <Icon size={25} />
+                <i className="mod-ico">
+                  <Icon size={25} />
+                </i>
                 <h3>{title}</h3>
                 <p>{text}</p>
               </article>
@@ -480,7 +484,7 @@ export default function Landing() {
           </p>
         </section>
         <section className="trial-section">
-          <div>
+          <div className="trial-copy">
             <p className="eyebrow">TU NEGOCIO. TU SIGUIENTE PASO.</p>
             <h2>
               Empieza hoy.
@@ -490,10 +494,29 @@ export default function Landing() {
               Nombre, cédula o RUC, correo y contraseña. Todas las funciones de
               Luxury durante tu prueba.
             </p>
+            <Link to="/registro" className="button green">
+              Crear mi cuenta <ArrowUpRight size={18} />
+            </Link>
           </div>
-          <Link to="/registro" className="button light">
-            Crear mi cuenta <ArrowUpRight size={18} />
-          </Link>
+          <div className="trial-visual" aria-hidden="true">
+            <span className="tv-orbit" />
+            <span className="tv-orbit tv-orbit-2" />
+            <span className="tv-core">
+              <ShieldCheck size={34} />
+            </span>
+            <span className="tv-chip tv-1">
+              <FileCheck2 size={21} />
+            </span>
+            <span className="tv-chip tv-2">
+              <Brain size={21} />
+            </span>
+            <span className="tv-chip tv-3">
+              <BadgeCheck size={21} />
+            </span>
+            <span className="tv-chip tv-4">
+              <Lock size={21} />
+            </span>
+          </div>
         </section>
       </main>
       <section className="trust-section">
@@ -546,7 +569,7 @@ export default function Landing() {
       </section>
       <footer>
         <Brand />
-        <p>Sistema de facturación para ventas, alquileres y servicios en Ecuador.</p>
+        <p>Sistema de facturación, alquileres y gestión con IA para negocios de Ecuador.</p>
         <div>
           <Link to="/facturacion-electronica">Facturación electrónica</Link>
           <Link to="/inteligencia-negocios">Inteligencia de negocios</Link>

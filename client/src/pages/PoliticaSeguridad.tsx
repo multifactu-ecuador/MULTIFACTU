@@ -1,14 +1,12 @@
 import { Link } from "react-router-dom";
-import Brand from "../components/Brand";
+import MarketingFooter from "../components/MarketingFooter";
+import MarketingHeader from "../components/MarketingHeader";
 import { SECURITY_POLICY_VERSION, LEGAL_UPDATED_DATE } from "../lib/legal";
 
 export default function PoliticaSeguridad() {
   return (
     <div className="marketing legal">
-      <header>
-        <Brand />
-        <Link className="button light" to="/registro">Crear cuenta</Link>
-      </header>
+      <MarketingHeader />
       <main>
         <p className="eyebrow">DOCUMENTO LEGAL</p>
         <h1>Política de seguridad de la información</h1>
@@ -98,6 +96,7 @@ export default function PoliticaSeguridad() {
           <Link to="/terminos">Términos de servicio</Link>
         </p>
       </main>
+      <MarketingFooter />
     </div>
   );
 }

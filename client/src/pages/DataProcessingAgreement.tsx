@@ -1,14 +1,12 @@
 import { Link } from "react-router-dom";
-import Brand from "../components/Brand";
+import MarketingFooter from "../components/MarketingFooter";
+import MarketingHeader from "../components/MarketingHeader";
 import { DATA_PROCESSING_VERSION, LEGAL_EFFECTIVE_DATE } from "../lib/legal";
 
 export default function DataProcessingAgreement() {
   return (
     <div className="marketing legal">
-      <header>
-        <Brand />
-        <Link className="button light" to="/registro">Crear cuenta</Link>
-      </header>
+      <MarketingHeader />
       <main>
         <p className="eyebrow">DOCUMENTO LEGAL</p>
         <h1>Contrato de encargo de tratamiento de datos personales</h1>
@@ -151,6 +149,7 @@ export default function DataProcessingAgreement() {
           normativa aplicable. Contacto para este contrato: <a href="mailto:Mulfactu@gmail.com">Mulfactu@gmail.com</a>.
         </p>
       </main>
+      <MarketingFooter />
     </div>
   );
 }

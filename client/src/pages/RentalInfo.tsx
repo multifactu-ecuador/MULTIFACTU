@@ -1,20 +1,19 @@
 import { Link } from "react-router-dom";
-import Brand from "../components/Brand";
+import MarketingFooter from "../components/MarketingFooter";
+import MarketingHeader from "../components/MarketingHeader";
 export default function RentalInfo() {
   return (
     <div className="marketing legal">
-      <header>
-        <Brand />
-        <Link className="button light" to="/registro">
-          Prueba 7 días
-        </Link>
-      </header>
+      <MarketingHeader />
       <main>
         <p className="eyebrow">PRO Y LUXURY</p>
         <h1>Alquileres: renta equipos con control total.</h1>
         <p>
           Maquinaria, andamios, herramientas y equipos de construcción. Fechas,
           garantías y disponibilidad por intervalo desde el mismo catálogo.
+          Incluye RUFO, el asistente de IA de MULTIFACTU: pregunta en español
+          por cobros, pendientes y ventas de alquileres con los datos reales
+          de tu empresa.
         </p>
         <div className="module-grid">
           {[
@@ -51,6 +50,7 @@ export default function RentalInfo() {
           Crear cuenta con Luxury por 7 días
         </Link>
       </main>
+      <MarketingFooter />
     </div>
   );
 }

@@ -98,6 +98,7 @@ export default function Register() {
               "Ventas, inventario, clientes y servicios",
               "Alquiler de maquinaria, equipos y herramientas",
               "Caja, cuentas y análisis financiero",
+              "Asistente IA integrado (RUFO) incluido",
               "Sin tarjeta ni cobro automático",
             ].map((t) => (
               <li key={t}>✦ {t}</li>

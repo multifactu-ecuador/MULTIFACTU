@@ -30,6 +30,7 @@ export default function Login() {
             Ventas, alquileres, servicios y finanzas. Vuelve a tu espacio de
             trabajo.
           </p>
+          <span className="ai-tag">✦ IA integrada · RUFO</span>
         </section>
         <section className="auth-card">
           <h2>Inicia sesión</h2>
