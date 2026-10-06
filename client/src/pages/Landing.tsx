@@ -253,6 +253,11 @@ export default function Landing() {
               </p>
             </article>
           </div>
+          <div className="tech-monitor">
+            <img src="/brands/betterstack.svg" alt="Better Stack" height="15" />
+            <span>Better Stack</span>
+            <em>Seguridad y disponibilidad monitoreadas 24/7 con alertas en minutos</em>
+          </div>
         </section>
         <section className="marketing-section" id="modulos">
           <p className="eyebrow">LO QUE TENEMOS PARA TI</p>
