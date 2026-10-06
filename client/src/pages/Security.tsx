@@ -46,7 +46,7 @@ export default function Security() {
           </article>
           <article className="security-ally">
             <div className="security-ally-brand"><img src="/brands/betterstack.svg" alt="Better Stack" height="28" /><span>ALIADO EN SEGURIDAD</span></div>
-            <div><h3>Disponibilidad vigilada con Better Stack</h3><p>Nuestra web, las funciones de API y el flujo de emisión SRI se comprueban cada 3 minutos desde Better Stack: si algo cae, hay alerta en minutos y la incidencia queda publicada en la página de estado.</p></div>
+            <div><h3>Disponibilidad vigilada con Better Stack</h3><p>Nuestra web, las funciones de API y el flujo de emisión SRI se comprueban cada 3 minutos desde Better Stack: si algo cae, hay alerta en minutos y la incidencia queda publicada en la <a className="status-link" href="https://multifactu.betteruptime.com/" target="_blank" rel="noreferrer">página de estado</a>.</p></div>
           </article>
         </div>
       </section>

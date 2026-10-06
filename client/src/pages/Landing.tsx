@@ -260,6 +260,14 @@ export default function Landing() {
                 Web, API y emisión SRI se comprueban cada 3 minutos. Si algo
                 cae, hay alerta en minutos y el estado es público.
               </p>
+              <a
+                className="status-link"
+                href="https://multifactu.betteruptime.com/"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Ver estado del servicio <ArrowUpRight size={14} />
+              </a>
             </article>
           </div>
         </section>
