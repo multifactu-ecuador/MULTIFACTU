@@ -53,7 +53,10 @@ Deno.serve(async (req) => {
   if (ctx instanceof Response) return ctx;
 
   const body = await req.json().catch(() => null) as { id?: unknown } | null;
-  const id = typeof body?.id === "string" ? body.id : null;
+  // Mismo patrón que el resto de functions: sólo UUID válido, no cualquier
+  // cadena (evita tráfico basura contra PostgREST).
+  const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const id = typeof body?.id === "string" && UUID.test(body.id) ? body.id : null;
   if (!id) return json({ error: "ID requerido" }, 400);
 
   const { data: inv, error } = await supabase

@@ -145,6 +145,8 @@ export async function realSriFlow(
   });
   if (!reception.ok) throw Error(`Recepción HTTP ${reception.status}`);
   const receptionXml = await reception.text();
+  if (receptionXml.length > 1_048_576)
+    throw Error("Respuesta de recepción del SRI demasiado grande");
   if (!receptionXml.includes("RECIBIDA")) {
     if (receptionXml.includes("DEVUELTA"))
       throw Error("Comprobante devuelto por el SRI: " + receptionXml.slice(0, 400));
@@ -161,6 +163,8 @@ export async function realSriFlow(
   if (!authorization.ok)
     throw Error(`Autorización HTTP ${authorization.status}`);
   const raw = await authorization.text();
+  if (raw.length > 1_048_576)
+    throw Error("Respuesta de autorización del SRI demasiado grande");
   const decoded = raw
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")

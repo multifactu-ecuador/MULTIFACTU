@@ -3690,7 +3690,7 @@ button.secondary:disabled { opacity: 0.5; cursor: not-allowed; }
 }
 .rufo-intro {
   max-width: 620px;
-  margin: -24px 0 34px;
+  margin: 18px 0 34px;
   color: #b6bcca;
   font-size: 17px;
   line-height: 1.6;
@@ -3795,7 +3795,7 @@ button.secondary:disabled { opacity: 0.5; cursor: not-allowed; }
   color: #e5432f;
 }
 
-/* Botones con estética de enlace en cabeceras (SignInButton/SignUpButton) */
+/* Botones con estï¿½tica de enlace en cabeceras (SignInButton/SignUpButton) */
 button.text-link {
   background: none;
   border: 0;

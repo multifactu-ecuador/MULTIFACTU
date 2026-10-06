@@ -114,7 +114,7 @@ export default function Documents() {
       @media print { button{display:none} }
     </style></head><body>
       <h1>${escapeHtml(emisor.razon_social ?? "MULTIFACTU")}</h1>
-      ${logoDataUrl ? `<img src="${logoDataUrl}" alt="logo" style="max-height:60px;margin-bottom:8px;display:block" />` : ""}
+      ${logoDataUrl ? `<img src="${escapeHtml(logoDataUrl)}" alt="logo" style="max-height:60px;margin-bottom:8px;display:block" />` : ""}
       <div><b>RUC:</b> ${escapeHtml(emisor.ruc ?? "-")} &nbsp; <b>Ambiente:</b> ${escapeHtml((row as any).ambiente_sri)}</div>
       <div><b>Dirección:</b> ${escapeHtml(emisor.direccion ?? "-")}</div>
       <hr/>

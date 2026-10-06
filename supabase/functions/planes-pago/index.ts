@@ -163,6 +163,17 @@ Deno.serve(async (req) => {
         input.transactionId <= 0
       )
         return json({ error: "Transacción inválida" }, 400);
+      // Tope de confirmaciones por empresa: 15 cada 15 minutos. Sin esto,
+      // el barrido de transacciones contra V2/Confirm de PayPhone no tenía
+      // límite alguno (sólo `prepare` lo tenía).
+      const limite = await admin.rpc("registrar_intento_edge", {
+        p_clave: `planes-confirm:${tenant}`,
+        p_limite: 15,
+        p_ventana_min: 15,
+      });
+      if (limite.error) throw limite.error;
+      if (limite.data !== true)
+        return json({ error: "Demasiados intentos de confirmación. Espera unos minutos." }, 429);
       const result = await admin
         .from("pedidos_planes")
         .select("*")

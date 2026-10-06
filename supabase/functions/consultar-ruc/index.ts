@@ -140,6 +140,20 @@ Deno.serve(async (req) => {
   const ruc = typeof body?.ruc === "string" ? body.ruc.trim() : "";
   if (!RUC.test(ruc)) return json({ error: "Ingresa un RUC de 13 dígitos" }, 400);
 
+  // Tope de consultas al proveedor fiscal por empresa: 60/hora. Cada
+  // consulta consume un crédito de pago del proveedor, así que el límite
+  // se aplica ANTES de llamarlo.
+  if (admin) {
+    const limite = await admin.rpc("registrar_intento_edge", {
+      p_clave: `consultar-ruc:${ctx.tenant}`,
+      p_limite: 60,
+      p_ventana_min: 60,
+    });
+    if (limite.error) return json({ error: "No se pudo procesar" }, 500);
+    if (limite.data !== true)
+      return json({ error: "Demasiadas consultas de RUC. Inténtalo en una hora." }, 429);
+  }
+
   const headers: Record<string, string> = { Accept: "application/json" };
   const token = Deno.env.get("RUC_LOOKUP_API_TOKEN");
   if (token) {

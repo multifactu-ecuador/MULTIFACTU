@@ -92,8 +92,14 @@ async function rejects(sql, args = []) {
 await user(A);
 assert.equal((await db.query("select * from public.empresas")).rows.length, 1);
 assert.equal((await db.query("select * from public.consentimientos_legales")).rows.length, 1);
+// Sólo columnas concedidas a authenticated: email/telefono de otros usuarios
+// ya no son legibles desde el navegador (minimización LOPDP).
 assert.equal(
-  (await db.query("select * from public.usuarios_perfiles")).rows.length,
+  (
+    await db.query(
+      "select id,tenant_id,nombre,rol from public.usuarios_perfiles",
+    )
+  ).rows.length,
   1,
 );
 await rejects(`update public.usuarios_perfiles set rol='ADMIN'`);

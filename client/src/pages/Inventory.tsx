@@ -175,6 +175,7 @@ export default function Inventory() {
               name="codigo"
               value={codigo}
               onChange={(e) => setCodigo(e.target.value)}
+              maxLength={80}
               required
             />
           </label>
@@ -185,6 +186,7 @@ export default function Inventory() {
               name="nombre"
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
+              maxLength={80}
               required
             />
           </label>

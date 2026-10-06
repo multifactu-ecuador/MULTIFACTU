@@ -91,6 +91,7 @@ export default function Customers() {
           <input
             name="identificacion"
             inputMode="numeric"
+            maxLength={13}
             defaultValue={edit?.identificacion}
             required
           />
@@ -102,15 +103,25 @@ export default function Customers() {
             defaultValue={edit?.nombre}
             required
             minLength={2}
+            maxLength={160}
           />
         </label>
         <label>
           Correo
-          <input name="email" type="email" defaultValue={edit?.email} />
+          <input
+            name="email"
+            type="email"
+            maxLength={160}
+            defaultValue={edit?.email}
+          />
         </label>
         <label>
           Dirección
-          <input name="direccion" defaultValue={edit?.direccion} />
+          <input
+            name="direccion"
+            maxLength={200}
+            defaultValue={edit?.direccion}
+          />
         </label>
         <button>Guardar cliente</button>
         {edit && (

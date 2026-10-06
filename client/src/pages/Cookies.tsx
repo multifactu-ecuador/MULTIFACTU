@@ -52,9 +52,9 @@ export default function Cookies() {
 
         <h2>4. Servicios de terceros</h2>
         <p>
-          Trabajamos con subencargados (Supabase, Vercel, NVIDIA, PayPhone) que
-          pueden usar sus propias cookies o almacenamiento técnico conforme a
-          sus políticas. La lista actualizada está en la{" "}
+          Trabajamos con subencargados (Supabase, Vercel, Clerk, NVIDIA,
+          PayPhone) que pueden usar sus propias cookies o almacenamiento
+          técnico conforme a sus políticas. La lista actualizada está en la{" "}
           <Link to="/privacidad">Política de privacidad</Link>.
         </p>
 

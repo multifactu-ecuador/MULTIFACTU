@@ -10,6 +10,19 @@ Deno.serve(async (req) => {
   if (!url || !key) return json({ error: "Backend no configurado" }, 503);
   const db = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
   const { data, error } = await db.rpc("procesar_facturas_programadas");
-  if (error) return json({ error: error.message }, 500);
+  if (error) {
+    // El mensaje de Postgres no sale ni al cron: sólo queda en el log.
+    console.error("procesar-programadas:", error.message);
+    return json({ error: "No se pudieron procesar las facturas programadas" }, 500);
+  }
+  // Purga de contadores/retención de IP (minimización de datos, LOPDP):
+  // las tablas de rate limit sólo necesitan la ventana de 1 hora activa.
+  const corte = new Date(Date.now() - 72 * 3600000).toISOString();
+  await Promise.all([
+    db.from("asistente_web_intentos").delete().lt("creado_en", corte),
+    db.from("p12_verify_intentos").delete().lt("creado_en", corte),
+    db.from("emision_intentos").delete().lt("creado_en", corte),
+    db.from("edge_rate_limits").delete().lt("creado_en", corte),
+  ]);
   return json({ procesadas: data });
 });

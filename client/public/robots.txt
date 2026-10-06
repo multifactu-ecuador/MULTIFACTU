@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /app/
+Disallow: /onboarding
+Disallow: /login
+Disallow: /registro
+Disallow: /cotizacion/
+
+Sitemap: https://multifactu.vercel.app/sitemap.xml

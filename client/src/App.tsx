@@ -23,6 +23,7 @@ import Storage from "./pages/Storage";
 import Onboarding from "./pages/Onboarding";
 import Legal from "./pages/Legal";
 import Privacy from "./pages/Privacy";
+import RefundPolicy from "./pages/RefundPolicy";
 import DataProcessingAgreement from "./pages/DataProcessingAgreement";
 import RentalInfo from "./pages/RentalInfo";
 import Security from "./pages/Security";
@@ -44,6 +45,7 @@ export default function App() {
           <Route path="/registro" element={<Register />} />
           <Route path="/terminos" element={<Legal />} />
           <Route path="/privacidad" element={<Privacy />} />
+          <Route path="/reembolsos" element={<RefundPolicy />} />
           <Route path="/contrato-encargo" element={<DataProcessingAgreement />} />
           <Route path="/alquileres" element={<RentalInfo />} />
           <Route path="/seguridad" element={<Security />} />

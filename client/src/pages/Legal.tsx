@@ -78,7 +78,9 @@ export default function Legal() {
           confirmación del medio de pago correspondiente. La cancelación evita
           renovaciones futuras, pero no elimina de forma automática obligaciones
           de pago ya causadas ni genera un reembolso de períodos efectivamente
-          utilizados, salvo que la ley aplicable disponga otra cosa.
+          utilizados, salvo que la ley aplicable disponga otra cosa. Los
+          reembolsos se rigen por la <Link to="/reembolsos">Política de
+          reembolsos</Link>, que forma parte integrante de estos Términos.
         </p>
         <h2>6. RUFO, asistente de inteligencia artificial</h2>
         <p>
@@ -141,8 +143,14 @@ export default function Legal() {
           cierre, exportación, devolución o eliminación de datos se gestionan
           conforme a la Política de privacidad, el Contrato de encargo y las
           obligaciones legales de conservación aplicables. Se aplica la ley de
-          la República del Ecuador. Las partes procurarán resolver cualquier
+          la República del Ecuador —en particular la Ley Orgánica de Defensa
+          del Consumidor, el COPCI y la Ley de Comercio Electrónico, Firmas y
+          Mensajes de Datos—. Las partes procurarán resolver cualquier
           controversia de buena fe antes de acudir a la autoridad competente.
+          El domicilio del Proveedor es Guayaquil y las controversias se
+          someten a sus juzgados y tribunales, sin perjuicio de los
+          mecanismos de defensa del consumidor, entre ellos la Defensoría del
+          Pueblo.
         </p>
         <h2>12. Actualizaciones y contacto</h2>
         <p>

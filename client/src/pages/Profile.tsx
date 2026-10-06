@@ -209,6 +209,13 @@ export default function Profile() {
         throw Error("Selecciona un archivo .p12");
       if (kind === "logos" && !["image/png", "image/jpeg"].includes(file.type))
         throw Error("El logo debe ser PNG o JPEG");
+      const maxBytes = (kind === "certificados" ? 5 : 2) * 1024 * 1024;
+      if (file.size > maxBytes)
+        throw Error(
+          kind === "certificados"
+            ? "El certificado .p12 no puede superar 5 MB"
+            : "La imagen no puede superar 2 MB",
+        );
       const path =
         access!.tenant_id +
         "/" +
@@ -405,6 +412,7 @@ export default function Profile() {
             value={companyName}
             onChange={(event) => setCompanyName(event.target.value)}
             required
+            maxLength={160}
             disabled={!editable}
           />
         </label>
@@ -415,6 +423,7 @@ export default function Profile() {
             value={businessName}
             onChange={(event) => setBusinessName(event.target.value)}
             required
+            maxLength={160}
             disabled={!editable}
           />
         </label>
@@ -460,6 +469,7 @@ export default function Profile() {
             name="direccion"
             value={address}
             onChange={(event) => setAddress(event.target.value)}
+            maxLength={200}
             disabled={!editable}
           />
         </label>

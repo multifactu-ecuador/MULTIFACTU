@@ -55,6 +55,10 @@ export default function Account() {
       setError("La foto debe ser PNG, JPEG o WEBP.");
       return;
     }
+    if (file.size > 2 * 1024 * 1024) {
+      setError("La foto no puede superar 2 MB.");
+      return;
+    }
     setBusy(true);
     setError("");
     setMessage("");

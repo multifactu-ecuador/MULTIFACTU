@@ -120,7 +120,17 @@ function TemplatesEditor() {
   const newTemplate = () => { setDirty(false); setForm({}); };
   const uploadLogo = async (file: File) => {
     if (!access) return;
-    const path = `${access.tenant_id}/logo-${Date.now()}.${file.type.split("/")[1]}`;
+    // Valida tipo y tamaño antes de tocar el bucket (el RLS de storage no
+    // comprueba content_type): sólo PNG/JPEG hasta 2 MB.
+    if (!["image/png", "image/jpeg"].includes(file.type)) {
+      setError("El logo debe ser PNG o JPEG");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setError("El logo no puede superar 2 MB");
+      return;
+    }
+    const path = `${access.tenant_id}/logo-${Date.now()}.${file.type === "image/png" ? "png" : "jpg"}`;
     try {
       await db().storage.from("logos").upload(path, file, { upsert: true });
       const { data } = await db().storage.from("logos").getPublicUrl(path);
@@ -337,10 +347,10 @@ function TemplatesEditor() {
               <p style={{ fontSize: "12px", color: "#6b7280", marginBottom: "12px" }}>{`Usa {{cliente.nombre}}, {{total}}, {{logo}}. HTML/CSS.`}</p>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
                 <div>
-                  <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "13px", fontWeight: "500" }}>HTML Template<textarea value={form.html_template || ""} onChange={e => handleChange("html_template", e.target.value)} rows={12} placeholder="<div class='factura'>...</div>" style={{ width: "100%", padding: "12px", fontFamily: "monospace", fontSize: "12px", border: "1px solid #ccc", borderRadius: 6, resize: "vertical" }} /></label>
+                  <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "13px", fontWeight: "500" }}>HTML Template<textarea value={form.html_template || ""} onChange={e => handleChange("html_template", e.target.value)} rows={12} maxLength={20000} placeholder="<div class='factura'>...</div>" style={{ width: "100%", padding: "12px", fontFamily: "monospace", fontSize: "12px", border: "1px solid #ccc", borderRadius: 6, resize: "vertical" }} /></label>
                 </div>
                 <div>
-                  <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "13px", fontWeight: "500" }}>CSS Template<textarea value={form.css_template || ""} onChange={e => handleChange("css_template", e.target.value)} rows={12} placeholder=".factura { color: #1e40af; }" style={{ width: "100%", padding: "12px", fontFamily: "monospace", fontSize: "12px", border: "1px solid #ccc", borderRadius: 6, resize: "vertical" }} /></label>
+                  <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "13px", fontWeight: "500" }}>CSS Template<textarea value={form.css_template || ""} onChange={e => handleChange("css_template", e.target.value)} rows={12} maxLength={20000} placeholder=".factura { color: #1e40af; }" style={{ width: "100%", padding: "12px", fontFamily: "monospace", fontSize: "12px", border: "1px solid #ccc", borderRadius: 6, resize: "vertical" }} /></label>
                 </div>
               </div>
             </fieldset>

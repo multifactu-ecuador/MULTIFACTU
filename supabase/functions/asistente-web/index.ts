@@ -41,23 +41,34 @@ Deno.serve(async (req) => {
   }
   if (!pregunta) return json({ error: "Escribe tu pregunta" }, 400);
 
-  const ip =
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-    req.headers.get("cf-connecting-ip") ??
-    "desconocida";
+  // IP de confianza: cabecera del proxy si existe; en x-forwarded-for se toma
+  // el ÚLTIMO salto (cada proxy lo añade al final, así que el cliente no
+  // puede falsearlo desde fuera) y se valida el formato.
+  const ipCruda =
+    req.headers.get("cf-connecting-ip")?.trim() ||
+    req.headers.get("x-forwarded-for")?.split(",").pop()?.trim() ||
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    "";
+  const ip = /^[0-9a-f:.]{3,45}$/i.test(ipCruda) ? ipCruda : "desconocida";
   const desde = new Date(Date.now() - 3600000).toISOString();
+  // Se registra ANTES de contar (cierra la carrera lectura→escritura) y se
+  // purgan los intentos con más de 72 h: no retenemos IPs de visitantes.
+  await admin
+    .from("asistente_web_intentos")
+    .delete()
+    .lt("creado_en", new Date(Date.now() - 72 * 3600000).toISOString());
+  await admin.from("asistente_web_intentos").insert({ ip });
   const { count, error: countError } = await admin
     .from("asistente_web_intentos")
     .select("id", { count: "exact", head: true })
     .eq("ip", ip)
     .gte("creado_en", desde);
   if (countError) return json({ error: "No se pudo procesar" }, 500);
-  if ((count ?? 0) >= MAX_POR_HORA)
+  if ((count ?? 0) > MAX_POR_HORA)
     return json(
       { error: "Has hecho muchas preguntas seguidas. Inténtalo en una hora o crea tu cuenta gratis para probarlo todo." },
       429,
     );
-  await admin.from("asistente_web_intentos").insert({ ip });
 
   const respuesta = await preguntarNvidia(
     [

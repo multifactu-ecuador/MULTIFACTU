@@ -71,6 +71,7 @@ export default function Privacy() {
           <li><b>Vercel Inc.</b> (EE.UU.): alojamiento de la aplicación web.</li>
           <li><b>NVIDIA Corp.</b> (NIM, EE.UU.): procesamiento puntual de las preguntas del asistente RUFO, junto con el contexto estrictamente necesario (cifras agregadas y memoria del asistente), para generar la respuesta; no se envían bases de datos completas ni se usan los datos para entrenar modelos.</li>
           <li><b>PayPhone</b> (Ecuador): procesamiento de pagos de planes, cuando el Cliente compra.</li>
+          <li><b>Clerk Inc.</b> (EE.UU.): identidad y autenticación de la cuenta (correo, nombre y acceso con Google).</li>
         </ul>
         <p>
           Todo subencargado está sujeto a obligaciones de confidencialidad,
@@ -119,13 +120,17 @@ export default function Privacy() {
 
         <h2>8. Derechos y consultas</h2>
         <p>
-          El titular puede ejercer los derechos reconocidos por la normativa
-          aplicable, incluidos acceso, rectificación y actualización,
+          El titular puede ejercer los derechos reconocidos por la
+          Constitución y por la Ley Orgánica de Protección de Datos
+          Personales (Registro Oficial Suplemento 459 de 26 de mayo de 2021)
+          y su Reglamento, incluidos acceso, rectificación y actualización,
           eliminación, oposición, suspensión, portabilidad y no ser objeto de
           decisiones automatizadas cuando correspondan. RUFO no toma decisiones
           automatizadas ni ejecuta acciones: sólo propone y el Cliente decide;
           ninguna sugerencia produce efectos por sí sola. Para datos de cuenta,
-          escribe a <a href="mailto:Mulfactu@gmail.com">Mulfactu@gmail.com</a>. Para datos cargados por un Cliente,
+          escribe a <a href="mailto:Mulfactu@gmail.com">Mulfactu@gmail.com</a>. Puedes además consultar o reclamar
+          ante la Superintendencia de Protección de Datos Personales (SPDP),
+          autoridad de control en Ecuador. Para datos cargados por un Cliente,
           el titular debe dirigir inicialmente su solicitud a ese Cliente como
           responsable del tratamiento; MULTIFACTU le asistirá según el Contrato
           de encargo.

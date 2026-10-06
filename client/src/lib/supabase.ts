@@ -42,10 +42,37 @@ export function db() {
     );
   return supabase;
 }
+/**
+ * Traduce a texto amable los mensajes internos de Postgres/PostgREST que
+ * llegan del servidor (nombres de constraints, tablas, detalles de RLS…)
+ * para no filtrar la estructura de la base de datos a la interfaz.
+ * Los mensajes propios de la aplicación (RAISE en español de las RPC)
+ * pasan sin tocar, salvo los códigos de negocio que se listan.
+ */
+export function traducirError(mensaje: string): string {
+  const m = mensaje ?? "";
+  if (/duplicate key/i.test(m))
+    return "Ese registro ya existe: el valor ingresado está repetido.";
+  if (/row-level security|permission denied/i.test(m))
+    return "No tienes permiso para realizar esta acción.";
+  if (/check constraint/i.test(m))
+    return "Algún dato del formulario no cumple el formato permitido.";
+  if (/foreign key constraint/i.test(m))
+    return "No se puede eliminar: el registro está relacionado con otros datos.";
+  if (/invalid input syntax|invalid uuid|invalid text representation|could not coerce|cannot cast/i.test(m))
+    return "Algún dato enviado no es válido. Revisa el formulario.";
+  if (/value too long|numeric field overflow|numeric field out of range|out of range for type/i.test(m))
+    return "Algún dato supera el tamaño o rango permitido.";
+  if (/PGRST|Could not find the/i.test(m))
+    return "No se pudo procesar la solicitud. Inténtalo de nuevo.";
+  if (/could not connect|failed to fetch|networkerror|load failed/i.test(m))
+    return "Sin conexión con el servidor. Revisa tu internet e inténtalo de nuevo.";
+  return m;
+}
 export function check<R extends { error: { message: string } | null }>(
   r: R,
 ): R extends { data: infer T } ? T : undefined {
-  if (r.error) throw Error(r.error.message);
+  if (r.error) throw Error(traducirError(r.error.message));
   return (r as R & { data?: unknown }).data as R extends { data: infer T }
     ? T
     : undefined;

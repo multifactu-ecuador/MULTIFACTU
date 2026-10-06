@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { CheckCircle2, XCircle, FileText } from "lucide-react";
-import { supabase, money } from "../lib/supabase";
+import { supabase, money, traducirError } from "../lib/supabase";
 import Brand from "../components/Brand";
 
 interface QuoteItem {
@@ -80,7 +80,9 @@ export default function QuotePublic() {
       p_token: token,
     });
     if (rpcError) {
-      setError(rpcError.message);
+      // Nunca pintar el mensaje crudo de Postgres en una página anónima:
+      // traducirError conserva los RAISE en español y oculta lo interno.
+      setError(traducirError(rpcError.message));
     } else {
       setDone((data as { estado: "Aprobada" | "Rechazada" }).estado);
     }

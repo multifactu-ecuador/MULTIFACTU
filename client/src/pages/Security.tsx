@@ -50,6 +50,6 @@ export default function Security() {
         </div>
       </section>
     </main>
-    <footer><Brand /><p>Sistema de facturación para ventas, alquileres y servicios en Ecuador.</p><div><Link to="/facturacion-electronica">Facturación electrónica</Link><Link to="/inteligencia-negocios">Inteligencia de negocios</Link><Link to="/terminos">Términos de servicio</Link><Link to="/privacidad">Política de privacidad</Link><Link to="/contrato-encargo">Contrato de encargo</Link><Link to="/cookies">Política de cookies</Link><Link to="/cumplimiento-legal">Cumplimiento legal</Link></div><small>© 2026 MULTIFACTU · Seguridad explicada de forma transparente.</small></footer>
+    <footer><Brand /><p>Sistema de facturación para ventas, alquileres y servicios en Ecuador.</p><div><Link to="/facturacion-electronica">Facturación electrónica</Link><Link to="/inteligencia-negocios">Inteligencia de negocios</Link><Link to="/terminos">Términos de servicio</Link><Link to="/privacidad">Política de privacidad</Link><Link to="/contrato-encargo">Contrato de encargo</Link><Link to="/cookies">Política de cookies</Link><Link to="/cumplimiento-legal">Cumplimiento legal</Link><Link to="/reembolsos">Política de reembolsos</Link></div><small>© 2026 MULTIFACTU · Seguridad explicada de forma transparente.</small></footer>
   </div>;
 }

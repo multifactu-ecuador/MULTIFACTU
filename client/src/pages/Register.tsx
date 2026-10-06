@@ -21,16 +21,50 @@ import Brand from "../components/Brand";
  * Los datos de negocio (empresa, cédula) y los consentimientos con sus
  * versiones NO se recolectan aquí: se recogen en /onboarding.
  */
+
+/** Evidencia de la aceptación guardada en la pestaña actual. */
+type Evidencia = { t: string; p: string; en: string };
+const CLAVE_ACEPTACION = "mf_aceptacion";
+
+/**
+ * Lee la evidencia de aceptación sólo si corresponde a las versiones
+ * vigentes de los documentos (si los términos cambian, se vuelve a exigir).
+ */
+function leerEvidencia(): Evidencia | null {
+  try {
+    const raw = sessionStorage.getItem(CLAVE_ACEPTACION);
+    if (!raw) return null;
+    const e = JSON.parse(raw) as Evidencia;
+    if (e && e.t === TERMS_VERSION && e.p === PRIVACY_VERSION && e.en)
+      return e;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function guardarEvidencia(en: string) {
+  try {
+    sessionStorage.setItem(
+      CLAVE_ACEPTACION,
+      JSON.stringify({ t: TERMS_VERSION, p: PRIVACY_VERSION, en }),
+    );
+  } catch {
+    // Sin sessionStorage (modo privado): la barrera simplemente se repetirá.
+  }
+}
+
 export default function Register() {
   const { session, loading } = useAuth();
-  // Un flujo de Clerk ya en curso vuelve a esta ruta con hash (retorno de
-  // Google/OAuth o de verificación de correo): en ese caso hay que montar
-  // <SignUp> sin barrera para que procese el callback.
-  const flujoEnCurso =
-    typeof window !== "undefined" && window.location.hash.length > 1;
-  const [marcado, setMarcado] = useState(flujoEnCurso);
-  const [aceptado, setAceptado] = useState(flujoEnCurso);
-  const [aceptadoEn, setAceptadoEn] = useState("");
+  // Evidencia de la aceptación en esta pestaña: sobrevive a los
+  // redireccionamientos de Clerk/Google (mismo tab), de modo que el retorno
+  // de un OAuth o de verificación de correo no vuelve a exigir la barrera.
+  // Una URL con cualquier #hash NO la salta: así no se puede registrar una
+  // cuenta sin aceptar escribiendo a mano una URL con fragmento.
+  const [evidencia] = useState(() => leerEvidencia());
+  const [marcado, setMarcado] = useState(!!evidencia);
+  const [aceptado, setAceptado] = useState(!!evidencia);
+  const [aceptadoEn, setAceptadoEn] = useState(evidencia?.en ?? "");
 
   // Quien ya tiene sesión no vuelve a pasar la barrera: su aceptación
   // quedó registrada en el alta anterior (o en el paso de onboarding).
@@ -113,7 +147,9 @@ export default function Register() {
                 style={{ width: "100%", marginTop: 16 }}
                 disabled={!marcado}
                 onClick={() => {
-                  setAceptadoEn(new Date().toISOString());
+                  const en = new Date().toISOString();
+                  guardarEvidencia(en);
+                  setAceptadoEn(en);
                   setAceptado(true);
                 }}
               >

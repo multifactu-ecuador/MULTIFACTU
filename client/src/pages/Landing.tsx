@@ -553,6 +553,7 @@ export default function Landing() {
           <Link to="/contrato-encargo">Contrato de encargo</Link>
           <Link to="/cookies">Política de cookies</Link>
           <Link to="/cumplimiento-legal">Cumplimiento legal</Link>
+          <Link to="/reembolsos">Política de reembolsos</Link>
           <a href="tel:0987516088">0987516088</a>
         </div>
         <small>
