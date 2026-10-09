@@ -173,7 +173,9 @@ export async function catalogoPaypal(
       description: `${nombrePlan(plan)}: facturación electrónica, suscripción mensual.`,
       billing_cycles: [
         {
-          frequency: { unit: "MONTH", value: 1 },
+          // La API actual exige interval_unit/interval_count; el clásico
+          // unit/value devuelve 400 INVALID_PARAMETER_VALUE en /billing/plans.
+          frequency: { interval_unit: "MONTH", interval_count: 1 },
           tenure_type: "REGULAR",
           sequence: 1,
           total_cycles: 0,
