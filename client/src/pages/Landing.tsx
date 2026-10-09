@@ -93,6 +93,9 @@ export default function Landing() {
             </SignUpButton>
           </Show>
           <Show when="signed-in">
+            <Link className="button green" to="/app">
+              Ir al sistema
+            </Link>
             <UserButton />
           </Show>
         </div>
