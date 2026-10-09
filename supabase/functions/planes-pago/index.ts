@@ -378,7 +378,12 @@ Deno.serve(async (req) => {
       });
     }
     return json({ error: "Acción inválida" }, 400);
-  } catch {
+  } catch (e) {
+    // Todos los throw de esta función son mensajes fijos (nunca llevan
+    // credenciales): devolver la causa es lo único que permite diagnosticar
+    // a distancia; el genérico solo no decía nada.
+    const causa = e instanceof Error ? e.message : "";
+    console.error("planes-pago:", causa || String(e));
     if (activeOrder)
       await admin
         .from("pedidos_planes")
@@ -389,6 +394,7 @@ Deno.serve(async (req) => {
     return json(
       {
         error:
+          causa ||
           "No se pudo confirmar la operación. Consulta el pedido antes de repetir un pago.",
       },
       502,
