@@ -12,7 +12,7 @@ export default function Onboarding() {
     [error, setError] = useState(""),
     [identification, setIdentification] = useState(""),
     [legalAccepted, setLegalAccepted] = useState(false);
-  const { access, needsOnboarding, refresh, logout, session } = useAuth();
+  const { access, needsOnboarding, refresh, logout } = useAuth();
   const navigate = useNavigate();
   if (access && !needsOnboarding) navigate("/app", { replace: true });
   const validation = identification
@@ -43,7 +43,6 @@ export default function Onboarding() {
           p_consentimiento: true,
           p_version_terminos: TERMS_VERSION,
           p_version_privacidad: PRIVACY_VERSION,
-          p_email: session?.user.email || null,
         }),
       );
       await refresh();

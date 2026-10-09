@@ -300,12 +300,23 @@ await rejects(
   "select public.crear_mi_empresa('OAuth sin aceptación','0999999999001','Cami',false,'2026-10-04','2026-10-04')",
 );
 await db.query(
-  "select public.crear_mi_empresa('Empresa C','0999999999001','Cami',true,'2026-10-04','2026-10-04')",
+  "select public.crear_mi_empresa('Empresa C','0999999999001','Cami',true,'2026-10-05.1','2026-10-05.2')",
 );
 assert.equal(
   (await db.query("select * from public.consentimientos_legales")).rows.length,
   1,
 );
+// El acta guarda las versiones REALES que aceptó el usuario (regresión del
+// pin '2026-10-04' que rompió el onboarding de todo usuario nuevo).
+{
+  const acta = (
+    await db.query(
+      "select version_terminos vt, version_privacidad vp from public.consentimientos_legales",
+    )
+  ).rows[0];
+  assert.equal(acta.vt, "2026-10-05.1");
+  assert.equal(acta.vp, "2026-10-05.2");
+}
 // --- Vault: la contraseña del .p12 nunca queda en texto plano ---
 await user(A);
 await db.query(`select public.guardar_p12_password($1)`, [

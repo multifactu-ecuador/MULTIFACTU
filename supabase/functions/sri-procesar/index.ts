@@ -69,7 +69,10 @@ Deno.serve(async (req) => {
     return json({ status: "omitido", reason: "No pendiente o ya procesada" });
   try {
     const mode = Deno.env.get("SRI_MODE") ?? "simulation";
-    const invoice = claimed as SriInvoice;
+    const invoice = claimed as SriInvoice & {
+      clave_acceso?: string | null;
+      xml_borrador?: string | null;
+    };
     const { data: lines, error } = await db
       .from("factura_detalles")
       .select("*")
@@ -77,10 +80,29 @@ Deno.serve(async (req) => {
       .eq("factura_id", id)
       .order("id");
     if (error || !lines?.length) throw Error("Detalles no disponibles");
-    const code = String(
-      crypto.getRandomValues(new Uint32Array(1))[0] % 100000000,
-    ).padStart(8, "0");
-    const draft = generateXml(invoice, lines as SriLine[], code);
+    // Clave de acceso y XML se persisten ANTES del primer envío: un
+    // reintento reutiliza la misma clave (la columna es unique) en vez de
+    // generar otra, y si perdimos la reclamación se aborta antes de firmar.
+    let draft: { key: string; xml: string };
+    if (invoice.clave_acceso && invoice.xml_borrador) {
+      draft = { key: invoice.clave_acceso, xml: invoice.xml_borrador };
+    } else {
+      const code = String(
+        crypto.getRandomValues(new Uint32Array(1))[0] % 100000000,
+      ).padStart(8, "0");
+      draft = generateXml(invoice, lines as SriLine[], code);
+      const { data: persisted, error: persistError } = await db
+        .from("facturas_sri")
+        .update({ clave_acceso: draft.key, xml_borrador: draft.xml })
+        .eq("tenant_id", tenant)
+        .eq("id", id)
+        .eq("claim_token", claim)
+        .eq("estado", "Procesando")
+        .select("id")
+        .maybeSingle();
+      if (persistError || !persisted)
+        throw Error("Reclamación perdida; no se emite");
+    }
     let signed: string,
       result: { authorized: boolean; xml: string; number: string | null },
       simulacion = mode !== "real",

@@ -59,7 +59,12 @@ Deno.serve(async (req) => {
   if (!claimed) return json({ status: "omitido", reason: "No pendiente" });
   try {
     const mode = Deno.env.get("SRI_MODE") ?? "simulation";
-    const nota = claimed as Record<string, unknown> & { id: string; factura_id: string };
+    const nota = claimed as Record<string, unknown> & {
+      id: string;
+      factura_id: string;
+      clave_acceso?: string | null;
+      xml_borrador?: string | null;
+    };
     const { data: factura, error: fErr } = await db
       .from("facturas_sri")
       .select("*")
@@ -67,6 +72,11 @@ Deno.serve(async (req) => {
       .eq("id", nota.factura_id)
       .single();
     if (fErr || !factura) throw Error("Factura base no encontrada");
+    // En modo real jamás se emite una NC sobre una factura simulada: ese
+    // comprobante no existe en el SRI. En simulación el flujo de prueba
+    // sigue permitido (crear_nota_credito no conoce el modo).
+    if (mode === "real" && factura.simulacion === true)
+      throw Error("Factura base simulada: no puede creditarse en modo real");
     const { data: lines, error: lErr } = await db
       .from("factura_detalles")
       .select("*")
@@ -74,16 +84,34 @@ Deno.serve(async (req) => {
       .eq("factura_id", nota.factura_id)
       .order("id");
     if (lErr || !lines?.length) throw Error("Detalles no disponibles");
-    const code = String(
-      crypto.getRandomValues(new Uint32Array(1))[0] % 100000000,
-    ).padStart(8, "0");
-    const draft = generateCreditNoteXml(
-      nota as unknown as Parameters<typeof generateCreditNoteXml>[0],
-      factura as unknown as SriInvoice & { clave_acceso: string; fecha: string },
-      lines as SriLine[],
-      String(nota.motivo ?? ""),
-      code,
-    );
+    // Misma disciplina que sri-procesar: clave y XML se persisten antes del
+    // primer envío y un reintento reutiliza la misma clave (unique).
+    let draft: { key: string; xml: string };
+    if (nota.clave_acceso && nota.xml_borrador) {
+      draft = { key: nota.clave_acceso, xml: nota.xml_borrador };
+    } else {
+      const code = String(
+        crypto.getRandomValues(new Uint32Array(1))[0] % 100000000,
+      ).padStart(8, "0");
+      draft = generateCreditNoteXml(
+        nota as unknown as Parameters<typeof generateCreditNoteXml>[0],
+        factura as unknown as SriInvoice & { clave_acceso: string; fecha: string },
+        lines as SriLine[],
+        String(nota.motivo ?? ""),
+        code,
+      );
+      const { data: persisted, error: persistError } = await db
+        .from("notas_credito")
+        .update({ clave_acceso: draft.key, xml_borrador: draft.xml })
+        .eq("tenant_id", tenant)
+        .eq("id", id)
+        .eq("claim_token", claim)
+        .eq("estado", "Procesando")
+        .select("id")
+        .maybeSingle();
+      if (persistError || !persisted)
+        throw Error("Reclamación perdida; no se emite");
+    }
     let signed: string,
       result: { authorized: boolean; xml: string; number: string | null },
       simulacion = mode !== "real",

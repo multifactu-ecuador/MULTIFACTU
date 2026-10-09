@@ -190,6 +190,7 @@ export default function POS({ rental = false }: { rental?: boolean }) {
     method,
     credit,
     rental,
+    rentalMode,
     start,
     end,
     deposit,
