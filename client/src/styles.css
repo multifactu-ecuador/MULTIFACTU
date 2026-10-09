@@ -959,8 +959,10 @@
   mix-blend-mode: screen;
 }
 .brand.dark img {
-  filter: none;
-  mix-blend-mode: multiply;
+  /* Sidebar negro: el isologo (PNG negro sobre transparente) se invierte a
+     blanco puro. Sin blend: sobre fondo oscuro multiply lo dejaría negro. */
+  filter: invert(1) brightness(2);
+  mix-blend-mode: normal;
 }
 .brand.icon {
   width: 38px;
@@ -2595,7 +2597,7 @@ a.business-tile:focus-visible {
   width: 100%;
   min-height: 4px;
   border-radius: 5px 5px 1px 1px;
-  background: linear-gradient(180deg, #29364d, #78869d);
+  background: linear-gradient(180deg, #CDFF28, #a8d420);
 }
 .sales-trend-column small {
   overflow: hidden;
@@ -2641,7 +2643,7 @@ a.business-tile:focus-visible {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: #263249;
+  background: #CDFF28;
 }
 .insight-list {
   display: grid;
@@ -2702,7 +2704,7 @@ a.business-tile:focus-visible {
 .payment-chart i {
   display: block;
   height: 100%;
-  background: #181d27;
+  background: #CDFF28;
   border-radius: 5px;
   min-width: 0;
 }
