@@ -1,14 +1,35 @@
+// Compra y renovación de planes. PayPal Subscriptions es la única pasarela
+// real: `prepare` crea la suscripción recurrente en PayPal y devuelve el
+// enlace de aprobación; el comprador aprueba y PayPal redirige a
+// /app/planes?subscription_id=…, donde `confirm` valida contra la API de
+// PayPal (plan, referencia, importe y estado) antes de activar el mes con
+// la RPC confirmar_suscripcion_paypal. `cancel` corta la renovación
+// automática sin tocar el período ya pagado. En modo demo no se cobra.
 import { createClient } from "npm:@supabase/supabase-js@2.117.2";
 import { guardar } from "../_shared/guard.ts";
 import { verificarEntorno } from "../_shared/verificar.ts";
 import {
   PLAN_BASE,
-  provider,
+  totalesPlan,
   checkedLink,
-  validPayment,
   type PlanOrder,
-} from "../_shared/payphone.ts";
+} from "../_shared/pago-plan.ts";
+import { apiPaypal, catalogoPaypal } from "../_shared/paypal.ts";
+
 const UUID = /^[0-9a-f-]{36}$/i;
+const SUB_ID = /^I-[0-9A-Za-z]{8,20}$/;
+
+/** Estructura de la suscripción de PayPal que usa esta función. */
+interface SuscripcionPaypal {
+  id?: string;
+  status?: string;
+  plan_id?: string;
+  custom_id?: string;
+  billing_info?: {
+    last_payment?: { amount?: { value?: string; currency_code?: string } };
+  };
+}
+
 Deno.serve(async (req) => {
   const origin = Deno.env.get("APP_ORIGIN")?.replace(/\/$/, "");
   const cors = {
@@ -39,7 +60,7 @@ Deno.serve(async (req) => {
     const input = await req.json();
     const mode = Deno.env.get("PAYMENTS_MODE") ?? "demo";
     if (input.action === "prepare") {
-      if (!["demo", "payphone"].includes(mode))
+      if (!["demo", "paypal"].includes(mode))
         return json({ error: "Compras deshabilitadas" }, 503);
       if (
         !Object.hasOwn(PLAN_BASE, input.plan) ||
@@ -57,7 +78,8 @@ Deno.serve(async (req) => {
       const rate = Number(Deno.env.get("PLAN_IVA_RATE") ?? 15);
       if (![0, 5, 15].includes(rate))
         throw Error("IVA de planes no configurado");
-      const base = PLAN_BASE[input.plan as keyof typeof PLAN_BASE];
+      const planClave = input.plan as keyof typeof PLAN_BASE;
+      const totales = totalesPlan(planClave, rate);
       let result = await admin
         .from("pedidos_planes")
         .select("*")
@@ -76,9 +98,9 @@ Deno.serve(async (req) => {
             plan: input.plan,
             token: input.token,
             client_tx: crypto.randomUUID().replaceAll("-", "").slice(0, 15),
-            base_centavos: base,
-            iva_centavos: Math.round((base * rate) / 100),
-            total_centavos: base + Math.round((base * rate) / 100),
+            base_centavos: totales.base,
+            iva_centavos: totales.iva,
+            total_centavos: totales.total,
             modo: mode,
           })
           .select("*")
@@ -102,13 +124,33 @@ Deno.serve(async (req) => {
           notice: "Pedido sin cobro real: no activa una suscripción.",
         });
       if (order.estado !== "PENDIENTE") return json({ order });
-      const token = Deno.env.get("PAYPHONE_TOKEN"),
-        store = Deno.env.get("PAYPHONE_STORE_ID");
-      if (!token || !store)
-        return json(
-          { error: "Configura PayPhone Business; no se procesó ningún cobro" },
-          503,
-        );
+      // Suscripción vigente del mismo plan: se renueva sola, comprar otra
+      // sólo duplicaría el cobro. Para otro plan sí se crea la nueva y la
+      // anterior se cancela al confirmar.
+      const vinculada = await admin
+        .from("suscripciones")
+        .select("plan,estado,fin,paypal_subscription_id")
+        .eq("tenant_id", tenant)
+        .maybeSingle();
+      if (vinculada.error) throw Error("Consulta de suscripción falló");
+      const sus = vinculada.data;
+      if (
+        sus?.paypal_subscription_id &&
+        sus.estado === "active" &&
+        sus.fin &&
+        new Date(sus.fin) > new Date()
+      ) {
+        if (sus.plan === order.plan)
+          return json(
+            {
+              error: `Tu plan ${order.plan} ya está activo y PayPal lo renueva automáticamente el ${new Date(
+                sus.fin,
+              ).toLocaleDateString("es-EC")}. No necesitas comprarlo de nuevo.`,
+              order,
+            },
+            409,
+          );
+      }
       const locked = await admin
         .from("pedidos_planes")
         .update({ estado: "PREPARANDO" })
@@ -121,32 +163,39 @@ Deno.serve(async (req) => {
       if (!locked.data)
         return json({ order, status: "Preparación en curso" }, 202);
       activeOrder = order.id;
-      const value = await provider(
-        "Prepare",
-        {
-          amount: order.total_centavos,
-          amountWithTax: order.iva_centavos ? order.base_centavos : 0,
-          amountWithoutTax: order.iva_centavos ? 0 : order.base_centavos,
-          tax: order.iva_centavos,
-          service: 0,
-          tip: 0,
-          currency: "USD",
-          clientTransactionId: order.client_tx,
-          storeId: store,
-          reference: "MULTIFACTU " + order.plan + " · un mes",
-          responseUrl: origin + "/app/planes",
-          cancellationUrl: origin + "/app/planes?cancelled=1",
-          timeZone: -5,
+      const catalogo = await catalogoPaypal(admin, rate);
+      const creada = await apiPaypal<{
+        id?: string;
+        links?: { rel: string; href: string }[];
+      }>("/v1/billing/subscriptions", "POST", {
+        plan_id: catalogo[planClave].planId,
+        custom_id: `${tenant}:${order.client_tx}`,
+        application_context: {
+          brand_name: "MULTIFACTU",
+          return_url: origin + "/app/planes",
+          cancel_url: origin + "/app/planes?cancelled=1",
+          user_action: "SUBSCRIBE_NOW",
+          locale: "es-ES",
+          payment_method: {
+            payer_selected: "PAYPAL",
+            payee_preferred: "IMMEDIATE_PAYMENT_REQUIRED",
+          },
         },
-        token,
+      });
+      if (creada.status !== 201 || !creada.data?.id)
+        throw Error("PayPal no creó la suscripción");
+      const approve = checkedLink(
+        creada.data.links?.find((l) => l.rel === "approve")?.href,
       );
+      if (!approve)
+        throw Error("PayPal no devolvió el enlace de aprobación");
       const save = await admin
         .from("pedidos_planes")
         .update({
           estado: "PREPARADO",
-          payment_id: String(value.paymentId),
-          pay_with_card: checkedLink(value.payWithCard),
-          pay_with_payphone: checkedLink(value.payWithPayPhone),
+          payment_id: creada.data.id,
+          pago_url: approve,
+          paypal_plan_id: catalogo[planClave].planId,
         })
         .eq("id", order.id)
         .eq("tenant_id", tenant)
@@ -157,15 +206,12 @@ Deno.serve(async (req) => {
     }
     if (input.action === "confirm") {
       if (
-        typeof input.clientTransactionId !== "string" ||
-        input.clientTransactionId.length > 50 ||
-        !Number.isSafeInteger(input.transactionId) ||
-        input.transactionId <= 0
+        typeof input.subscriptionId !== "string" ||
+        !SUB_ID.test(input.subscriptionId)
       )
-        return json({ error: "Transacción inválida" }, 400);
+        return json({ error: "Suscripción inválida" }, 400);
       // Tope de confirmaciones por empresa: 15 cada 15 minutos. Sin esto,
-      // el barrido de transacciones contra V2/Confirm de PayPhone no tenía
-      // límite alguno (sólo `prepare` lo tenía).
+      // cada retorno de PayPal podría barrer la API sin límite alguno.
       const limite = await admin.rpc("registrar_intento_edge", {
         p_clave: `planes-confirm:${tenant}`,
         p_limite: 15,
@@ -173,45 +219,116 @@ Deno.serve(async (req) => {
       });
       if (limite.error) throw limite.error;
       if (limite.data !== true)
-        return json({ error: "Demasiados intentos de confirmación. Espera unos minutos." }, 429);
+        return json(
+          { error: "Demasiados intentos de confirmación. Espera unos minutos." },
+          429,
+        );
       const result = await admin
         .from("pedidos_planes")
         .select("*")
         .eq("tenant_id", tenant)
-        .eq("client_tx", input.clientTransactionId)
-        .single();
-      if (result.error) return json({ error: "Pedido no encontrado" }, 404);
+        .eq("payment_id", input.subscriptionId)
+        .maybeSingle();
+      if (result.error || !result.data)
+        return json({ error: "Pedido no encontrado" }, 404);
       const order = result.data as PlanOrder;
-      if (order.modo !== "payphone")
-        return json({ error: "Un pedido sin cobro real no puede activar un plan" }, 409);
+      if (order.modo !== "paypal")
+        return json(
+          { error: "Un pedido sin cobro real no puede activar un plan" },
+          409,
+        );
       if (order.aplicado_en) return json({ order });
-      const token = Deno.env.get("PAYPHONE_TOKEN");
-      if (!token) return json({ error: "Proveedor sin configurar" }, 503);
-      const response = await provider(
-        "V2/Confirm",
-        { id: input.transactionId, clientTxId: order.client_tx },
-        token,
+      // La suscripción aprobada debe coincidir con el pedido en todo:
+      // identificador, plan recurrente y referencia interna custom_id.
+      const consulta = await apiPaypal<SuscripcionPaypal>(
+        `/v1/billing/subscriptions/${order.payment_id}`,
+        "GET",
       );
-      if (validPayment(response, order, input.transactionId)) {
-        const activation = await admin.rpc("confirmar_pago_plan", {
-          p_pedido: order.id,
-          p_transaction: input.transactionId,
-          p_total: order.total_centavos,
-          p_moneda: "USD",
-        });
-        if (activation.error)
-          throw Error(
-            "Pago verificado pero activación pendiente; revisar pedido",
-          );
-      } else {
-        const cancel = await admin
-          .from("pedidos_planes")
-          .update({ estado: "CANCELADO" })
-          .eq("id", order.id)
-          .eq("tenant_id", tenant)
-          .is("aplicado_en", null);
-        if (cancel.error) throw Error("No se pudo registrar cancelación");
+      if (consulta.status !== 200 || !consulta.data)
+        return json(
+          { error: "PayPal no reconoce esta suscripción" },
+          409,
+        );
+      const sub = consulta.data;
+      if (
+        sub.id !== order.payment_id ||
+        sub.plan_id !== order.paypal_plan_id ||
+        sub.custom_id !== `${tenant}:${order.client_tx}`
+      )
+        return json(
+          { error: "La suscripción aprobada no coincide con el pedido" },
+          409,
+        );
+      if (!["APPROVED", "ACTIVE"].includes(sub.status ?? ""))
+        return json(
+          {
+            error: `La suscripción está en estado ${sub.status ?? "desconocido"}; termina la aprobación en PayPal.`,
+          },
+          409,
+        );
+      // En el primer ciclo sin prueba, PayPal la deja APPROVED hasta que se
+      // activa: la activación dispara el cobro inmediato del primer mes.
+      let estado = sub.status;
+      if (estado === "APPROVED") {
+        await apiPaypal(
+          `/v1/billing/subscriptions/${sub.id}/activate`,
+          "POST",
+          { plan_id: order.paypal_plan_id },
+        );
+        const despues = await apiPaypal<SuscripcionPaypal>(
+          `/v1/billing/subscriptions/${sub.id}`,
+          "GET",
+        );
+        estado = despues.data?.status ?? estado;
+        sub.billing_info = despues.data?.billing_info ?? sub.billing_info;
       }
+      if (estado !== "ACTIVE")
+        return json(
+          {
+            error:
+              "PayPal no activó la suscripción; espera unos segundos y confirma de nuevo.",
+          },
+          409,
+        );
+      const ultimo = sub.billing_info?.last_payment?.amount;
+      const esperado = (order.total_centavos / 100).toFixed(2);
+      if (
+        ultimo &&
+        (ultimo.value !== esperado || ultimo.currency_code !== "USD")
+      )
+        return json(
+          { error: "El importe cobrado no coincide con el pedido" },
+          409,
+        );
+      // Cambio de plan: cancelar la suscripción anterior ANTES de activar la
+      // nueva; si no, PayPal seguiría cobrando las dos cada mes.
+      const previa = await admin
+        .from("suscripciones")
+        .select("paypal_subscription_id")
+        .eq("tenant_id", tenant)
+        .maybeSingle();
+      if (previa.error) throw Error("Consulta de suscripción falló");
+      const anterior = previa.data?.paypal_subscription_id;
+      if (anterior && anterior !== order.payment_id) {
+        const cancelada = await apiPaypal(
+          `/v1/billing/subscriptions/${anterior}/cancel`,
+          "POST",
+          { reason: "Cambio de plan en MULTIFACTU" },
+        );
+        // 204 cancelada; 404/422 ya estaba cancelada en PayPal.
+        if (![204, 404, 422].includes(cancelada.status))
+          throw Error("No se pudo cancelar la suscripción anterior");
+      }
+      const activacion = await admin.rpc("confirmar_suscripcion_paypal", {
+        p_pedido: order.id,
+        p_subscription: order.payment_id,
+        p_total: order.total_centavos,
+        p_moneda: "USD",
+      });
+      if (activacion.error)
+        throw Error(
+          "Pago verificado pero activación pendiente; revisar pedido",
+        );
       const saved = await admin
         .from("pedidos_planes")
         .select("*")
@@ -220,6 +337,45 @@ Deno.serve(async (req) => {
         .single();
       if (saved.error) throw Error("Consulta de resultado falló");
       return json({ order: saved.data });
+    }
+    if (input.action === "cancel") {
+      // Corta la renovación automática en PayPal; el período ya pagado
+      // sigue vigente hasta su fecha de fin.
+      const s = await admin
+        .from("suscripciones")
+        .select("paypal_subscription_id,plan,estado,fin,paypal_estado")
+        .eq("tenant_id", tenant)
+        .maybeSingle();
+      if (s.error) throw Error("Consulta de suscripción falló");
+      const id = s.data?.paypal_subscription_id;
+      if (!id)
+        return json(
+          { error: "No hay una suscripción de PayPal vinculada a esta empresa" },
+          404,
+        );
+      const cancelada = await apiPaypal(
+        `/v1/billing/subscriptions/${id}/cancel`,
+        "POST",
+        { reason: "Cancelación solicitada en MULTIFACTU" },
+      );
+      if (![204, 404, 422].includes(cancelada.status))
+        return json(
+          { error: "PayPal no confirmó la cancelación; intenta de nuevo." },
+          409,
+        );
+      const marcado = await admin
+        .from("suscripciones")
+        .update({ paypal_estado: "CANCELLED" })
+        .eq("tenant_id", tenant)
+        .eq("paypal_subscription_id", id)
+        .select("plan,estado,inicio,fin,paypal_estado,paypal_subscription_id")
+        .maybeSingle();
+      if (marcado.error)
+        throw Error("Cancelada en PayPal pero no registrada localmente");
+      return json({
+        suscripcion: marcado.data,
+        aviso: "PayPal dejará de cobrar. El plan sigue activo hasta el fin del período ya pagado.",
+      });
     }
     return json({ error: "Acción inválida" }, 400);
   } catch {

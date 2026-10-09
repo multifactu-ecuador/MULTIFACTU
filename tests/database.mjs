@@ -253,23 +253,48 @@ await rejects(
   "select public.crear_mi_empresa('Repetida','1710034065001','Ana',true,'2026-10-04','2026-10-04')",
 );
 await owner();
+// Pedidos y activación con PayPal: la RPC exige service_role, total
+// exacto, moneda USD y una referencia de suscripción de tamaño real.
 const order = (
   await db.query(
-    `insert into public.pedidos_planes(tenant_id,usuario_id,plan,token,client_tx,base_centavos,iva_centavos,total_centavos,modo) values($1,$2,'pro',gen_random_uuid(),'test-order',1000,150,1150,'payphone') returning id`,
+    `insert into public.pedidos_planes(tenant_id,usuario_id,plan,token,client_tx,base_centavos,iva_centavos,total_centavos,modo,payment_id) values($1,$2,'pro',gen_random_uuid(),'test-order',1000,150,1150,'paypal','I-TESTTESTTEST') returning id`,
     [ta, A],
   )
 ).rows[0].id;
 await user(A);
-await rejects("select public.confirmar_pago_plan($1,123,1150,'USD')", [order]);
+await rejects(
+  "select public.confirmar_suscripcion_paypal($1,'I-TESTTESTTEST',1150,'USD')",
+  [order],
+);
 await owner();
-await rejects("select public.confirmar_pago_plan($1,123,1,'USD')", [order]);
-await db.query("select public.confirmar_pago_plan($1,123,1150,'USD')", [order]);
-const first = (
-  await db.query("select fin from public.suscripciones where tenant_id=$1", [
-    ta,
-  ])
-).rows[0].fin;
-await db.query("select public.confirmar_pago_plan($1,123,1150,'USD')", [order]);
+await rejects(
+  "select public.confirmar_suscripcion_paypal($1,'I-TESTTESTTEST',1,'USD')",
+  [order],
+);
+await rejects(
+  "select public.confirmar_suscripcion_paypal($1,'corto',1150,'USD')",
+  [order],
+);
+await db.query(
+  "select public.confirmar_suscripcion_paypal($1,'I-TESTTESTTEST',1150,'USD')",
+  [order],
+);
+const activa = (
+  await db.query(
+    "select estado,plan,paypal_subscription_id,paypal_estado,fin from public.suscripciones where tenant_id=$1",
+    [ta],
+  )
+).rows[0];
+assert.equal(activa.estado, "active");
+assert.equal(activa.plan, "pro");
+assert.equal(activa.paypal_subscription_id, "I-TESTTESTTEST");
+assert.equal(activa.paypal_estado, "ACTIVE");
+const first = activa.fin;
+// Repetir la misma confirmación no añade un mes extra.
+await db.query(
+  "select public.confirmar_suscripcion_paypal($1,'I-TESTTESTTEST',1150,'USD')",
+  [order],
+);
 assert.deepEqual(
   (
     await db.query("select fin from public.suscripciones where tenant_id=$1", [
@@ -278,7 +303,15 @@ assert.deepEqual(
   ).rows[0].fin,
   first,
 );
+// Otra referencia sobre un pedido ya aplicado = rechazo.
+await rejects(
+  "select public.confirmar_suscripcion_paypal($1,'I-OTRAOTRAOTRA',1150,'USD')",
+  [order],
+);
+// Las tablas de conciliación de PayPal son internas: ningún cliente las ve.
 await user(A);
+await rejects("select * from public.pagos_paypal_catalogo");
+await rejects("select * from public.pagos_paypal_ventas");
 assert.equal(
   (await db.query("select public.mi_acceso() a")).rows[0].a.funciones.alquiler,
   true,

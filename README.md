@@ -46,7 +46,7 @@ Los precios comerciales incluyen proformas, cuentas por pagar y análisis avanza
 - XML de factura, clave módulo 11 y flujo de recepción/autorización **simulados**, modal y descarga del XML demo. La simulación nunca usa el certificado ni llama al SRI real.
 - Finanzas: gráfico de métodos de cobro, abonos parciales, gastos, cuotas vencidas, cierres diarios y plantillas de recordatorio (sin pagos automáticos).
 - Perfil editable y subida privada de logo/certificado; la contraseña del .p12 se cifra en Supabase Vault y sólo el backend la descifra al firmar. El logo de la empresa todavía no se incrusta en un RIDE o contrato PDF.
-- Pedidos de planes y adaptador PayPhone configurable. En modo demo no cobra ni activa suscripciones. En modo real confirma importe/moneda/transacción con el proveedor antes de activar.
+- Pedidos de planes con suscripción automática de PayPal. En modo demo no cobra ni activa suscripciones; en modo real la confirmación revalida identificador, plan, referencia, importe y estado contra la API de PayPal antes de activar, y el webhook autorizado añade cada renovación cobrada exactamente una vez.
 
 ## Qué falta para venderlo como sistema completo
 

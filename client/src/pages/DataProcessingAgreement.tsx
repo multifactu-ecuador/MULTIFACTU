@@ -99,7 +99,7 @@ export default function DataProcessingAgreement() {
           <li><b>Supabase Inc.</b> (EE.UU.): autenticación, base de datos PostgreSQL, almacenamiento y funciones de servidor.</li>
           <li><b>Vercel Inc.</b> (EE.UU.): alojamiento de la aplicación web.</li>
           <li><b>NVIDIA Corp.</b> (NIM, EE.UU.): procesamiento puntual de las preguntas del asistente RUFO con el contexto necesario (cifras agregadas y memoria del asistente) para generar respuestas, sin usar los datos para entrenar modelos.</li>
-          <li><b>PayPhone</b> (Ecuador): procesamiento de pagos de los planes contratados.</li>
+          <li><b>PayPal</b> (EE.UU.): procesamiento de pagos de los planes contratados mediante suscripción automática.</li>
         </ul>
         <p>
           MULTIFACTU comunicará cambios materiales de esta lista con antelación

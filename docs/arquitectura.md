@@ -31,11 +31,11 @@ Buckets privados `certificados`, `documentos`, `logos`. La primera carpeta debe 
 
 ## Pagos
 
-PAYMENTS_MODE=demo es el valor seguro inicial: crea pedido pero no cobra ni concede plan. Para modo payphone configura PAYPHONE_TOKEN, PAYPHONE_STORE_ID, APP_ORIGIN con el dominio HTTPS autorizado y PLAN_IVA_RATE correspondiente. El backend calcula precios en centavos; el navegador no decide total ni plan activo. El JWT se verifica con Auth y el tenant se deriva del perfil.
+PAYMENTS_MODE=demo es el valor seguro inicial: crea pedido pero no cobra ni concede plan. Para cobro real configura PAYPAL_CLIENT_ID, PAYPAL_SECRET, PAYPAL_MODE (sandbox por defecto; live sólo con credenciales de producción), APP_ORIGIN con el dominio HTTPS autorizado y PLAN_IVA_RATE correspondiente. El backend calcula precios en centavos; el navegador no decide total ni plan activo. El JWT se verifica con Auth y el tenant se deriva del perfil.
 
-Al volver de PayPhone se confirma la transacción con V2/Confirm, comprobando referencia, total, moneda y aprobación. Una RPC accesible sólo por service_role aplica el plan y marca el pedido en una sola transacción. Repetir la confirmación no añade meses extra. El mismo plan activo renueva desde su fin; cambiar plan reemplaza por un mes sin prorrateo. No hay cobros automáticos.
+El cobro es una suscripción automática de PayPal Subscriptions: `prepare` crea la suscripción recurrente (producto, planes y webhook se registran vía API la primera vez y quedan en pagos_paypal_catalogo por entorno sandbox/live) y devuelve el enlace de aprobación; el comprador aprueba y PayPal redirige a /app/planes?subscription_id=…, donde `confirm` revalida contra la API identificador, plan recurrente, referencia custom_id, importe y estado, activa el primer mes y cancela la suscripción anterior si hubo cambio de plan. Una RPC accesible sólo por service_role aplica el plan y marca el pedido en una sola transacción; repetir la confirmación no añade meses extra. El webhook /pagos-webhook es público pero exige la verificación criptográfica de la transmisión de PayPal antes de escribir: cada renovación cobrada añade un mes deduplicando por id de venta y avanzando `fin` sólo hacia next_billing_time (nunca hacia atrás ni dos veces); los fallos de cobro suspenden la suscripción y la cancelación del comprador corta la renovación sin tocar el período ya pagado.
 
-La confirmación depende actualmente del retorno del comprador autenticado. PayPhone documenta un plazo de confirmación: completa conciliación y recuperación antes de cobrar en producción. Prueba con credenciales reales autorizadas, rechazo, cancelación, timeout y retorno sin sesión. La aplicación conserva la ruta del pedido al redirigir a login.
+Antes de cobrar en producción prueba el sandbox completo: aprobación, rechazo, cancelación del comprador, fallo de cobro (evento SUSPENDED), retorno sin sesión y renovación simulada. La aplicación conserva la ruta del pedido al redirigir a login.
 
 ## Integridad y permisos
 
@@ -71,4 +71,4 @@ opciones con cifras y **no decide ni ejecuta** nada.
 - Webhooks: https://supabase.com/docs/guides/database/webhooks
 - Seguridad Storage: https://supabase.com/docs/guides/storage/security/access-control
 - Edge Auth: https://supabase.com/docs/guides/functions/auth
-- PayPhone: https://docs.payphone.app/boton-de-pago
+- PayPal Subscriptions: https://developer.paypal.com/docs/api/subscriptions/v1/

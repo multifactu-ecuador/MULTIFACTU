@@ -4,12 +4,13 @@ import { Check, ShieldCheck, CreditCard } from "lucide-react";
 import { plans } from "./Landing";
 import { db, money } from "../lib/supabase";
 import { useAuth } from "../auth/AuthContext";
-import type { PlanOrder } from "../../../supabase/functions/_shared/payphone.ts";
+import type { PlanOrder } from "../../../supabase/functions/_shared/pago-plan.ts";
 export default function Plans() {
   const { access, refresh } = useAuth();
   const [query] = useSearchParams();
   const [order, setOrder] = useState<PlanOrder | null>(null),
     [error, setError] = useState(""),
+    [aviso, setAviso] = useState(""),
     [busy, setBusy] = useState(false);
   const tokens = useRef<Record<string, string>>({});
   const confirmation = useRef("");
@@ -23,11 +24,16 @@ export default function Plans() {
       } catch {}
       throw Error(message);
     }
-    return r.data as { order: PlanOrder; notice?: string };
+    return r.data as {
+      order?: PlanOrder;
+      aviso?: string;
+      notice?: string;
+    };
   }
   async function buy(plan: string) {
     setBusy(true);
     setError("");
+    setAviso("");
     try {
       tokens.current[plan] ??= crypto.randomUUID();
       const r = await invoke({
@@ -35,29 +41,50 @@ export default function Plans() {
         plan,
         token: tokens.current[plan],
       });
-      setOrder(r.order);
+      if (r.order) setOrder(r.order);
+      // PayPal: seguir de inmediato al enlace de aprobación (rel=approve).
+      if (
+        r.order?.modo === "paypal" &&
+        r.order.estado === "PREPARADO" &&
+        r.order.pago_url
+      )
+        window.location.assign(r.order.pago_url);
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo crear el pedido");
     } finally {
       setBusy(false);
     }
   }
-  useEffect(() => {
-    const client = query.get("clientTransactionId"),
-      transaction = Number(query.get("id"));
-    if (!client || !Number.isSafeInteger(transaction) || transaction <= 0)
+  async function cancelar() {
+    if (
+      !window.confirm(
+        "PayPal dejará de cobrar este plan. Seguirás con todas las funciones hasta el fin del período ya pagado.",
+      )
+    )
       return;
-    const key = client + ":" + transaction;
-    if (confirmation.current === key) return;
-    confirmation.current = key;
     setBusy(true);
-    void invoke({
-      action: "confirm",
-      clientTransactionId: client,
-      transactionId: transaction,
-    })
+    setError("");
+    try {
+      const r = await invoke({ action: "cancel" });
+      setAviso(r.aviso ?? "Renovación cancelada.");
+      await refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "No se pudo cancelar");
+    } finally {
+      setBusy(false);
+    }
+  }
+  useEffect(() => {
+    // PayPal redirige de vuelta a /app/planes con el id de la suscripción
+    // aprobada; la confirmación se hace contra su API, nunca en cliente.
+    const subscription = query.get("subscription_id");
+    if (!subscription) return;
+    if (confirmation.current === subscription) return;
+    confirmation.current = subscription;
+    setBusy(true);
+    void invoke({ action: "confirm", subscriptionId: subscription })
       .then(async (r) => {
-        setOrder(r.order);
+        if (r.order) setOrder(r.order);
         await refresh();
       })
       .catch((e) => {
@@ -66,6 +93,8 @@ export default function Plans() {
       })
       .finally(() => setBusy(false));
   }, [query.toString()]);
+  const vinculada = access?.suscripcion.paypal_subscription_id;
+  const cancelada = access?.suscripcion.paypal_estado === "CANCELLED";
   return (
     <section>
       <div className="page-heading">
@@ -73,8 +102,8 @@ export default function Plans() {
           <p className="eyebrow">SUSCRIPCIÓN / TU SIGUIENTE PASO</p>
           <h1>Elige cómo crecer.</h1>
           <p>
-            Inicial, Pro y Luxury. Puedes cancelar cuando quieras dejando de
-            renovar.
+            Inicial, Pro y Luxury. Puedes cancelar la renovación cuando
+            quieras.
           </p>
         </div>
         <span className="pill">
@@ -85,16 +114,37 @@ export default function Plans() {
         </span>
       </div>
       <p className="notice">
-        Renovación por compra, sin débito automático. Renovar el mismo plan
-        añade un mes al período vigente; cambiar a otro lo reemplaza
-        inmediatamente por un mes, sin prorrateo. Los permisos cambian después
-        de confirmar el pago real.
+        Renovación automática con PayPal: cada mes se cobra el total del plan
+        vigente. Puedes cancelar cuando quieras y el plan sigue activo hasta el
+        fin del período ya pagado; cambiar de plan reemplaza el período
+        inmediatamente, sin prorrateo. Los permisos cambian después de
+        confirmar el pago real.
       </p>
+      {vinculada && access?.suscripcion.estado === "active" && (
+        <p className="notice">
+          Suscripción automática activa ({access.suscripcion.plan}): PayPal la
+          cobra el{" "}
+          {new Date(access.suscripcion.fin).toLocaleDateString("es-EC")}.{" "}
+          {cancelada ? (
+            "La renovación está cancelada: seguirá activa hasta esa fecha."
+          ) : (
+            <button
+              type="button"
+              className="linklike"
+              disabled={busy}
+              onClick={() => void cancelar()}
+            >
+              Cancelar renovación automática
+            </button>
+          )}
+        </p>
+      )}
       {error && (
         <p className="error" role="alert">
           {error}
         </p>
       )}
+      {aviso && <p className="notice">{aviso}</p>}
       {query.has("cancelled") && (
         <p className="notice">
           Regresaste de un pago cancelado. No se considera pagado sólo por
@@ -153,18 +203,14 @@ export default function Plans() {
           </p>
           {order.modo === "demo" ? (
             <p className="notice">
-              No se ha cobrado ni habilitado otro plan. Configura PayPhone Business y valida un pago real para activar suscripciones comerciales.
+              No se ha cobrado ni habilitado otro plan. Configura PayPal
+              (PAYPAL_CLIENT_ID, PAYPAL_SECRET y PAYMENTS_MODE=paypal) y valida
+              un pago real para activar suscripciones comerciales.
             </p>
-          ) : order.estado === "PREPARADO" ? (
+          ) : order.estado === "PREPARADO" && order.pago_url ? (
             <div className="payment-actions">
-              <a className="button" href={order.pay_with_card ?? "#"}>
-                Pagar con tarjeta ↗
-              </a>
-              <a
-                className="button secondary"
-                href={order.pay_with_payphone ?? "#"}
-              >
-                Pagar con PayPhone ↗
+              <a className="button" href={order.pago_url}>
+                Continuar con PayPal ↗
               </a>
             </div>
           ) : order.estado === "PAGADO" ? (

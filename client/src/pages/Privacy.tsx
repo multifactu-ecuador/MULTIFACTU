@@ -68,7 +68,7 @@ export default function Privacy() {
           <li><b>Supabase Inc.</b> (EE.UU.): autenticación, base de datos PostgreSQL, almacenamiento de archivos y funciones de servidor.</li>
           <li><b>Vercel Inc.</b> (EE.UU.): alojamiento de la aplicación web.</li>
           <li><b>NVIDIA Corp.</b> (NIM, EE.UU.): procesamiento puntual de las preguntas del asistente RUFO, junto con el contexto estrictamente necesario (cifras agregadas y memoria del asistente), para generar la respuesta; no se envían bases de datos completas ni se usan los datos para entrenar modelos.</li>
-          <li><b>PayPhone</b> (Ecuador): procesamiento de pagos de planes, cuando el Cliente compra.</li>
+          <li><b>PayPal</b> (EE.UU.): procesamiento de pagos de planes mediante suscripción automática, cuando el Cliente compra.</li>
           <li><b>Clerk Inc.</b> (EE.UU.): identidad y autenticación de la cuenta (correo, nombre y acceso con Google).</li>
         </ul>
         <p>

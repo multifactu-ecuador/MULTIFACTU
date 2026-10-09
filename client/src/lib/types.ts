@@ -39,6 +39,10 @@ export interface Subscription {
   estado: "trial" | "active" | "expired" | "suspended";
   inicio: string;
   fin: string;
+  /** Suscripción de PayPal vinculada (I-...); null si nunca hubo cobro. */
+  paypal_subscription_id?: string | null;
+  /** Último estado reportado por PayPal (ACTIVE, CANCELLED, ...). */
+  paypal_estado?: string | null;
 }
 export interface Access {
   tenant_id: string;
