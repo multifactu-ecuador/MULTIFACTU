@@ -111,7 +111,7 @@ export default function Plans() {
               <small> + IVA / mes</small>
             </div>
             {p.popular && (
-              <span className="pill" style={{ background: "#4a6cff", color: "#fff" }}>
+              <span className="pill" style={{ background: "#CDFF28", color: "#0a0a0a" }}>
                 Recomendado
               </span>
             )}
