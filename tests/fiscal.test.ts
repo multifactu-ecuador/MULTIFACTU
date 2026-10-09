@@ -123,3 +123,91 @@ test("Comprobante incluye el campo RUC Proveedor solo si está configurado", () 
     assert.doesNotMatch(nota, /infoAdicional/);
   }
 });
+
+const withEmisor = (extra: Partial<SriInvoice["emisor_snapshot"]>) =>
+  ({
+    ...baseInvoice,
+    emisor_snapshot: { ...baseInvoice.emisor_snapshot, ...extra },
+  }) as SriInvoice;
+
+test("Factura: agente de retención y leyenda RIMPE en el orden de los Anexos 21/22", () => {
+  const { xml } = generateXml(
+    withEmisor({
+      regimen: "rimpe_emprendedor",
+      agente_retencion: "001234",
+      obligado_contabilidad: true,
+      contribuyente_especial: "5368",
+    }),
+    [baseLine],
+    "12345678",
+  );
+  const pos = (tag: string) => xml.indexOf(tag);
+  // infoTributaria: ...dirMatriz → agenteRetencion → contribuyenteRimpe →
+  // cierre, tal como fija la Ficha Técnica v2.34.
+  assert.ok(pos("<dirMatriz>") < pos("<agenteRetencion>"));
+  assert.ok(pos("<agenteRetencion>") < pos("<contribuyenteRimpe>"));
+  assert.ok(pos("<contribuyenteRimpe>") < pos("</infoTributaria>"));
+  // Anexo 21: número de resolución omitiendo los ceros a la izquierda.
+  assert.match(xml, /<agenteRetencion>1234<\/agenteRetencion>/);
+  assert.match(
+    xml,
+    /<contribuyenteRimpe>CONTRIBUYENTE RÉGIMEN RIMPE<\/contribuyenteRimpe>/,
+  );
+  // infoFactura (Anexo 1): fecha → dirEstablecimiento → contribuyenteEspecial
+  // → obligadoContabilidad → tipoIdentificacionComprador.
+  assert.ok(pos("<fechaEmision>") < pos("<dirEstablecimiento>"));
+  assert.ok(pos("<dirEstablecimiento>") < pos("<contribuyenteEspecial>"));
+  assert.ok(pos("<contribuyenteEspecial>") < pos("<obligadoContabilidad>"));
+  assert.ok(pos("<obligadoContabilidad>") < pos("<tipoIdentificacionComprador>"));
+  assert.match(xml, /<obligadoContabilidad>SI<\/obligadoContabilidad>/);
+  assert.match(xml, /<contribuyenteEspecial>5368<\/contribuyenteEspecial>/);
+});
+
+test("Sin diseño especial no se emiten las etiquetas y contabilidad responde NO", () => {
+  const { xml } = generateXml(baseInvoice, [baseLine], "12345678");
+  assert.doesNotMatch(xml, /<agenteRetencion>/);
+  assert.doesNotMatch(xml, /<contribuyenteRimpe>/);
+  assert.doesNotMatch(xml, /<contribuyenteEspecial>/);
+  assert.match(xml, /<obligadoContabilidad>NO<\/obligadoContabilidad>/);
+
+  // Valor inutilizable (sin resolución real): el nodo se omite en vez de
+  // enviar al SRI un dato malformado.
+  const mal = generateXml(
+    withEmisor({ agente_retencion: "0", contribuyente_especial: "12" }),
+    [baseLine],
+    "12345678",
+  );
+  assert.doesNotMatch(mal.xml, /<agenteRetencion>/);
+  assert.doesNotMatch(mal.xml, /<contribuyenteEspecial>/);
+});
+
+test("Nota de crédito: Negocio Popular y parámetros tras la identificación (Anexo 4)", () => {
+  const factura = withEmisor({
+    regimen: "rimpe_negocio_popular",
+    obligado_contabilidad: true,
+    contribuyente_especial: "5368",
+  });
+  const { xml } = generateCreditNoteXml(
+    {
+      ...factura,
+      motivo: "Devolución",
+    } as unknown as Parameters<typeof generateCreditNoteXml>[0],
+    { ...factura, clave_acceso: "1".repeat(49), fecha: "2026-10-02" },
+    [baseLine],
+    "Devolución",
+    "87654321",
+  );
+  const pos = (tag: string) => xml.indexOf(tag);
+  assert.match(
+    xml,
+    /<contribuyenteRimpe>CONTRIBUYENTE NEGOCIO POPULAR - RÉGIMEN RIMPE<\/contribuyenteRimpe>/,
+  );
+  assert.ok(pos("<dirMatriz>") < pos("<contribuyenteRimpe>"));
+  assert.ok(pos("<contribuyenteRimpe>") < pos("</infoTributaria>"));
+  // En infoNotaCredito van tras la identificación del comprador y antes de
+  // codDocModificado (Anexo 4 de la Ficha Técnica v2.34).
+  assert.ok(pos("</identificacionComprador>") < pos("<contribuyenteEspecial>"));
+  assert.ok(pos("<contribuyenteEspecial>") < pos("<obligadoContabilidad>"));
+  assert.ok(pos("<obligadoContabilidad>") < pos("<codDocModificado>"));
+  assert.match(xml, /<obligadoContabilidad>SI<\/obligadoContabilidad>/);
+});

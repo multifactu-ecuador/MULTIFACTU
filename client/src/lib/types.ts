@@ -26,6 +26,10 @@ export interface Company {
   p12_secret_id?: string | null;
   regimen?: "general" | "rimpe_emprendedor" | "rimpe_negocio_popular";
   obligado_contabilidad?: boolean;
+  /** N° de resolución de agente de retención sin ceros a la izquierda (Anexo 21). */
+  agente_retencion?: string | null;
+  /** N° de resolución de contribuyente especial, 3-13 alfanuméricos. */
+  contribuyente_especial?: string | null;
   creado_en: string;
 }
 export interface Subscription {

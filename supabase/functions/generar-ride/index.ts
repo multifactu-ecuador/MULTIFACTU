@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { generateRidePdf } from "../_shared/ride-pdf.ts";
+import { RUC_PROVEEDOR } from "../_shared/sri.ts";
 import { guardar } from "../_shared/guard.ts";
 import { verificarEntorno } from "../_shared/verificar.ts";
 
@@ -75,6 +76,17 @@ Deno.serve(async (req) => {
   if (detailsError) return json({ error: "No se pudieron cargar los detalles" }, 500);
   const detalles = (det ?? []) as any[];
 
+  // Datos fiscales vigentes del emisor para las leyendas de régimen del
+  // RIDE (Anexos 21 y 22) y el campo RUC Proveedor (Anexo 26), los mismos
+  // valores que el XML emite en infoTributaria/infoAdicional.
+  const { data: empresa } = await supabase
+    .from("empresas")
+    .select(
+      "regimen, obligado_contabilidad, agente_retencion, contribuyente_especial",
+    )
+    .eq("id", ctx.tenant)
+    .maybeSingle();
+
   const invRow = inv as InvoiceRow;
   const emisor = invRow.emisor_snapshot ?? {};
   const cliente = invRow.cliente_snapshot ?? {};
@@ -86,6 +98,11 @@ Deno.serve(async (req) => {
     nombreComercial: emisor.nombre_comercial ?? emisor.razon_social ?? "SIN NOMBRE",
     direccionMatriz: emisor.direccion ?? "SIN DIRECCIÓN",
     direccionEstablecimiento: emisor.direccion ?? "SIN DIRECCIÓN",
+    regimen: empresa?.regimen ?? "general",
+    obligadoContabilidad: empresa?.obligado_contabilidad === true,
+    agenteRetencion: empresa?.agente_retencion ?? undefined,
+    contribuyenteEspecial: empresa?.contribuyente_especial ?? undefined,
+    rucProveedor: RUC_PROVEEDOR || undefined,
     ambiente: (invRow.ambiente_sri === "pruebas" ? "1" : "2") as "1" | "2",
     tipoComprobante: "01" as const,
     establecimiento: invRow.establecimiento,

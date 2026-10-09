@@ -44,6 +44,8 @@ export default function Profile() {
     [address, setAddress] = useState(access?.empresa.direccion ?? ""),
     [regime, setRegime] = useState<Regimen>(access?.empresa.regimen ?? "general"),
     [accountingRequired, setAccountingRequired] = useState(access?.empresa.obligado_contabilidad ?? false),
+    [agentResolution, setAgentResolution] = useState(access?.empresa.agente_retencion ?? ""),
+    [specialResolution, setSpecialResolution] = useState(access?.empresa.contribuyente_especial ?? ""),
     [establishment, setEstablishment] = useState(access?.empresa.establecimiento ?? "001"),
     [emissionPoint, setEmissionPoint] = useState(access?.empresa.punto_emision ?? "001"),
     [lookupBusy, setLookupBusy] = useState(false),
@@ -95,6 +97,16 @@ export default function Profile() {
       setError("No puedes guardar un RUC que no está activo.");
       return;
     }
+    if (agentResolution && !/^[1-9][0-9]{0,7}$/.test(agentResolution)) {
+      setError(
+        "La resolución de agente de retención va sin ceros a la izquierda y hasta 8 dígitos.",
+      );
+      return;
+    }
+    if (specialResolution && !/^[0-9A-Za-z]{3,13}$/.test(specialResolution)) {
+      setError("La resolución de contribuyente especial debe tener de 3 a 13 caracteres.");
+      return;
+    }
     setBusy(true);
     setError("");
     setMessage("");
@@ -109,6 +121,8 @@ export default function Profile() {
             direccion: address.trim(),
             regimen: regime,
             obligado_contabilidad: accountingRequired,
+            agente_retencion: agentResolution || null,
+            contribuyente_especial: specialResolution || null,
             establecimiento: establishment,
             punto_emision: emissionPoint,
           })
@@ -536,6 +550,18 @@ export default function Profile() {
             </button>
           </p>
         )}
+        {rucLookup?.agenteRetencion && !agentResolution && (
+          <p className="notice">
+            El SRI te registra como agente de retención: ingresa el número de
+            tu resolución para que aparezca en cada comprobante (Anexo 21).
+          </p>
+        )}
+        {rucLookup?.contribuyenteEspecial && !specialResolution && (
+          <p className="notice">
+            El SRI te registra como contribuyente especial: ingresa el número
+            de tu resolución para que aparezca en cada comprobante.
+          </p>
+        )}
         <div className="editor-grid" style={{ marginTop: 18 }}>
           <label className="checkbox">
             <input
@@ -546,6 +572,37 @@ export default function Profile() {
               disabled={!editable}
             />
             <span>Obligado a llevar contabilidad</span>
+          </label>
+          <label>
+            Agente de retención · N.º de resolución
+            <input
+              name="agente_retencion"
+              value={agentResolution}
+              onChange={(event) =>
+                setAgentResolution(
+                  event.target.value.replace(/\D/g, "").replace(/^0+/, "").slice(0, 8),
+                )
+              }
+              inputMode="numeric"
+              maxLength={8}
+              placeholder="Vacío si no eres agente"
+              disabled={!editable}
+            />
+          </label>
+          <label>
+            Contribuyente especial · N.º de resolución
+            <input
+              name="contribuyente_especial"
+              value={specialResolution}
+              onChange={(event) =>
+                setSpecialResolution(
+                  event.target.value.replace(/[^0-9A-Za-z]/g, "").slice(0, 13),
+                )
+              }
+              maxLength={13}
+              placeholder="Vacío si no aplica"
+              disabled={!editable}
+            />
           </label>
           <label>
             Establecimiento

@@ -16,7 +16,19 @@ export interface SriInvoice {
   descuentos: number;
   metodo_pago: string;
   credito_dias: number;
-  emisor_snapshot: { ruc: string; razon_social: string; direccion: string };
+  emisor_snapshot: {
+    ruc: string;
+    razon_social: string;
+    direccion: string;
+    /** Régimen tributario (Anexo 22: leyenda RIMPE en infoTributaria). */
+    regimen?: string | null;
+    /** ¿Obligado a llevar contabilidad? (obligadoContabilidad, Anexo 1). */
+    obligado_contabilidad?: boolean | null;
+    /** N° de resolución de agente de retención (Anexo 21). */
+    agente_retencion?: string | null;
+    /** N° de resolución de contribuyente especial (Anexo 1). */
+    contribuyente_especial?: string | null;
+  };
   cliente_snapshot: {
     tipo_id: string;
     identificacion: string;
@@ -70,6 +82,52 @@ const infoAdicionalProveedor = () =>
   RUC_PROVEEDOR
     ? `<infoAdicional><campoAdicional nombre="RUC Proveedor">${escape(RUC_PROVEEDOR)}</campoAdicional></infoAdicional>`
     : "";
+
+/**
+ * N° de resolución de agente de retención en el formato del Anexo 21:
+ * sólo dígitos, sin ceros a la izquierda, máximo 8 caracteres. Devuelve
+ * cadena vacía si el valor guardado no es utilizable y en ese caso el
+ * nodo no se emite, para no enviar al SRI un dato malformado.
+ */
+const resolucionAgente = (valor: unknown) => {
+  const digitos = String(valor ?? "").replace(/\D/g, "").replace(/^0+(?=\d)/, "");
+  return /^[1-9][0-9]{0,7}$/.test(digitos) ? digitos : "";
+};
+
+/**
+ * Cierre de `<infoTributaria>` con las etiquetas de régimen que exigen los
+ * Anexos 21 (agente de retención) y 22 (RIMPE) de la Ficha Técnica v2.34.
+ * La propia Ficha fija el orden: tras `<dirMatriz>` viene
+ * `<agenteRetencion>?` y después `<contribuyenteRimpe>?`, y sólo se emite
+ * la etiqueta que corresponda al contribuyente.
+ */
+const infoTributariaRegimen = (e: SriInvoice["emisor_snapshot"]) => {
+  const agente = resolucionAgente(e.agente_retencion);
+  const leyendaRimpe =
+    e.regimen === "rimpe_negocio_popular"
+      ? "CONTRIBUYENTE NEGOCIO POPULAR - RÉGIMEN RIMPE"
+      : e.regimen === "rimpe_emprendedor"
+        ? "CONTRIBUYENTE RÉGIMEN RIMPE"
+        : "";
+  return (
+    (agente ? `<agenteRetencion>${agente}</agenteRetencion>` : "") +
+    (leyendaRimpe
+      ? `<contribuyenteRimpe>${leyendaRimpe}</contribuyenteRimpe>`
+      : "")
+  );
+};
+
+/** `<contribuyenteEspecial>` sólo cuando hay resolución válida (3-13 alfanuméricos). */
+const contribuyenteEspecial = (e: SriInvoice["emisor_snapshot"]) => {
+  const resolucion = String(e.contribuyente_especial ?? "").trim();
+  return /^[0-9A-Za-z]{3,13}$/.test(resolucion)
+    ? `<contribuyenteEspecial>${escape(resolucion)}</contribuyenteEspecial>`
+    : "";
+};
+
+/** `<obligadoContabilidad>` con SI/NO, tal como marca el Anexo 1. */
+const obligadoContabilidad = (e: SriInvoice["emisor_snapshot"]) =>
+  `<obligadoContabilidad>${e.obligado_contabilidad ? "SI" : "NO"}</obligadoContabilidad>`;
 export function generateXml(
   invoice: SriInvoice,
   lines: SriLine[],
@@ -99,7 +157,7 @@ export function generateXml(
       tax: v === 0 ? 0 : Number(invoice[v === 5 ? "iva_5" : "iva_15"]),
     }))
     .filter((g) => g.base > 0);
-  const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<factura id="comprobante" version="1.1.0"><infoTributaria><ambiente>${invoice.ambiente_sri === "pruebas" ? "1" : "2"}</ambiente><tipoEmision>1</tipoEmision><razonSocial>${escape(e.razon_social)}</razonSocial><ruc>${escape(e.ruc)}</ruc><claveAcceso>${key}</claveAcceso><codDoc>01</codDoc><estab>${escape(invoice.establecimiento)}</estab><ptoEmi>${escape(invoice.punto_emision)}</ptoEmi><secuencial>${String(invoice.secuencial).padStart(9, "0")}</secuencial><dirMatriz>${escape(e.direccion || "Ecuador")}</dirMatriz></infoTributaria><infoFactura><fechaEmision>${date}</fechaEmision><tipoIdentificacionComprador>${escape(c.tipo_id)}</tipoIdentificacionComprador><razonSocialComprador>${escape(c.nombre)}</razonSocialComprador><identificacionComprador>${escape(c.identificacion)}</identificacionComprador><totalSinImpuestos>${money(Number(invoice.subtotal_0) + Number(invoice.subtotal_5) + Number(invoice.subtotal_15))}</totalSinImpuestos><totalDescuento>${money(invoice.descuentos)}</totalDescuento><totalConImpuestos>${groups.map((g) => `<totalImpuesto><codigo>2</codigo><codigoPorcentaje>${ivaCode[g.v]}</codigoPorcentaje><baseImponible>${money(g.base)}</baseImponible><valor>${money(g.tax)}</valor></totalImpuesto>`).join("")}</totalConImpuestos><propina>0.00</propina><importeTotal>${money(invoice.total)}</importeTotal><moneda>DOLAR</moneda><pagos><pago><formaPago>${escape(invoice.metodo_pago)}</formaPago><total>${money(invoice.total)}</total>${invoice.credito_dias ? `<plazo>${invoice.credito_dias}</plazo><unidadTiempo>dias</unidadTiempo>` : ""}</pago></pagos></infoFactura><detalles>${lines.map((l, i) => `<detalle><codigoPrincipal>ITEM-${i + 1}</codigoPrincipal><descripcion>${escape(l.descripcion)}</descripcion><cantidad>${Number(l.cantidad).toFixed(6)}</cantidad><precioUnitario>${Number(l.precio).toFixed(6)}</precioUnitario><descuento>${money(l.descuento)}</descuento><precioTotalSinImpuesto>${money(l.base)}</precioTotalSinImpuesto><impuestos><impuesto><codigo>2</codigo><codigoPorcentaje>${ivaCode[l.iva]}</codigoPorcentaje><tarifa>${l.iva.toFixed(2)}</tarifa><baseImponible>${money(l.base)}</baseImponible><valor>${money(l.impuesto)}</valor></impuesto></impuestos></detalle>`).join("")}</detalles>${infoAdicionalProveedor()}</factura>`;
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<factura id="comprobante" version="1.1.0"><infoTributaria><ambiente>${invoice.ambiente_sri === "pruebas" ? "1" : "2"}</ambiente><tipoEmision>1</tipoEmision><razonSocial>${escape(e.razon_social)}</razonSocial><ruc>${escape(e.ruc)}</ruc><claveAcceso>${key}</claveAcceso><codDoc>01</codDoc><estab>${escape(invoice.establecimiento)}</estab><ptoEmi>${escape(invoice.punto_emision)}</ptoEmi><secuencial>${String(invoice.secuencial).padStart(9, "0")}</secuencial><dirMatriz>${escape(e.direccion || "Ecuador")}</dirMatriz>${infoTributariaRegimen(e)}</infoTributaria><infoFactura><fechaEmision>${date}</fechaEmision><dirEstablecimiento>${escape(e.direccion || "Ecuador")}</dirEstablecimiento>${contribuyenteEspecial(e)}${obligadoContabilidad(e)}<tipoIdentificacionComprador>${escape(c.tipo_id)}</tipoIdentificacionComprador><razonSocialComprador>${escape(c.nombre)}</razonSocialComprador><identificacionComprador>${escape(c.identificacion)}</identificacionComprador><totalSinImpuestos>${money(Number(invoice.subtotal_0) + Number(invoice.subtotal_5) + Number(invoice.subtotal_15))}</totalSinImpuestos><totalDescuento>${money(invoice.descuentos)}</totalDescuento><totalConImpuestos>${groups.map((g) => `<totalImpuesto><codigo>2</codigo><codigoPorcentaje>${ivaCode[g.v]}</codigoPorcentaje><baseImponible>${money(g.base)}</baseImponible><valor>${money(g.tax)}</valor></totalImpuesto>`).join("")}</totalConImpuestos><propina>0.00</propina><importeTotal>${money(invoice.total)}</importeTotal><moneda>DOLAR</moneda><pagos><pago><formaPago>${escape(invoice.metodo_pago)}</formaPago><total>${money(invoice.total)}</total>${invoice.credito_dias ? `<plazo>${invoice.credito_dias}</plazo><unidadTiempo>dias</unidadTiempo>` : ""}</pago></pagos></infoFactura><detalles>${lines.map((l, i) => `<detalle><codigoPrincipal>ITEM-${i + 1}</codigoPrincipal><descripcion>${escape(l.descripcion)}</descripcion><cantidad>${Number(l.cantidad).toFixed(6)}</cantidad><precioUnitario>${Number(l.precio).toFixed(6)}</precioUnitario><descuento>${money(l.descuento)}</descuento><precioTotalSinImpuesto>${money(l.base)}</precioTotalSinImpuesto><impuestos><impuesto><codigo>2</codigo><codigoPorcentaje>${ivaCode[l.iva]}</codigoPorcentaje><tarifa>${l.iva.toFixed(2)}</tarifa><baseImponible>${money(l.base)}</baseImponible><valor>${money(l.impuesto)}</valor></impuesto></impuestos></detalle>`).join("")}</detalles>${infoAdicionalProveedor()}</factura>`;
   return { key, xml };
 }
 
@@ -150,7 +208,7 @@ export function generateCreditNoteXml(
       tax: v === 0 ? 0 : Number(nota[v === 5 ? "iva_5" : "iva_15"]),
     }))
     .filter((g) => g.base > 0);
-  const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<notaCredito id="comprobante" version="1.1.0"><infoTributaria><ambiente>${nota.ambiente_sri === "pruebas" ? "1" : "2"}</ambiente><tipoEmision>1</tipoEmision><razonSocial>${escape(e.razon_social)}</razonSocial><ruc>${escape(e.ruc)}</ruc><claveAcceso>${key}</claveAcceso><codDoc>04</codDoc><estab>${escape(nota.establecimiento)}</estab><ptoEmi>${escape(nota.punto_emision)}</ptoEmi><secuencial>${String(nota.secuencial).padStart(9, "0")}</secuencial><dirMatriz>${escape(e.direccion || "Ecuador")}</dirMatriz></infoTributaria><infoNotaCredito><fechaEmision>${date}</fechaEmision><dirEstablecimiento>${escape(e.direccion || "Ecuador")}</dirEstablecimiento><tipoIdentificacionComprador>${escape(c.tipo_id)}</tipoIdentificacionComprador><razonSocialComprador>${escape(c.nombre)}</razonSocialComprador><identificacionComprador>${escape(c.identificacion)}</identificacionComprador><codDocModificado>01</codDocModificado><numDocModificado>${refNumber}</numDocModificado><fechaEmisionDocSustento>${factura.fecha.split("-").reverse().join("/")}</fechaEmisionDocSustento><totalSinImpuestos>${money(Number(nota.subtotal_0) + Number(nota.subtotal_5) + Number(nota.subtotal_15))}</totalSinImpuestos><valorModificacion>${money(nota.total)}</valorModificacion><moneda>DOLAR</moneda><totalConImpuestos>${groups.map((g) => `<totalImpuesto><codigo>2</codigo><codigoPorcentaje>${ivaCode[g.v]}</codigoPorcentaje><baseImponible>${money(g.base)}</baseImponible><valor>${money(g.tax)}</valor></totalImpuesto>`).join("")}</totalConImpuestos><motivo>${escape(motivo)}</motivo></infoNotaCredito><detalles>${lines.map((l, i) => `<detalle><codigoInterno>ITEM-${i + 1}</codigoInterno><descripcion>${escape(l.descripcion)}</descripcion><cantidad>${Number(l.cantidad).toFixed(2)}</cantidad><precioUnitario>${Number(l.precio).toFixed(6)}</precioUnitario><descuento>${money(l.descuento)}</descuento><precioTotalSinImpuesto>${money(l.base)}</precioTotalSinImpuesto><impuestos><impuesto><codigo>2</codigo><codigoPorcentaje>${ivaCode[l.iva]}</codigoPorcentaje><tarifa>${Number(l.iva).toFixed(2)}</tarifa><baseImponible>${money(l.base)}</baseImponible><valor>${money(l.impuesto)}</valor></impuesto></impuestos></detalle>`).join("")}</detalles>${infoAdicionalProveedor()}</notaCredito>`;
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<notaCredito id="comprobante" version="1.1.0"><infoTributaria><ambiente>${nota.ambiente_sri === "pruebas" ? "1" : "2"}</ambiente><tipoEmision>1</tipoEmision><razonSocial>${escape(e.razon_social)}</razonSocial><ruc>${escape(e.ruc)}</ruc><claveAcceso>${key}</claveAcceso><codDoc>04</codDoc><estab>${escape(nota.establecimiento)}</estab><ptoEmi>${escape(nota.punto_emision)}</ptoEmi><secuencial>${String(nota.secuencial).padStart(9, "0")}</secuencial><dirMatriz>${escape(e.direccion || "Ecuador")}</dirMatriz>${infoTributariaRegimen(e)}</infoTributaria><infoNotaCredito><fechaEmision>${date}</fechaEmision><dirEstablecimiento>${escape(e.direccion || "Ecuador")}</dirEstablecimiento><tipoIdentificacionComprador>${escape(c.tipo_id)}</tipoIdentificacionComprador><razonSocialComprador>${escape(c.nombre)}</razonSocialComprador><identificacionComprador>${escape(c.identificacion)}</identificacionComprador>${contribuyenteEspecial(e)}${obligadoContabilidad(e)}<codDocModificado>01</codDocModificado><numDocModificado>${refNumber}</numDocModificado><fechaEmisionDocSustento>${factura.fecha.split("-").reverse().join("/")}</fechaEmisionDocSustento><totalSinImpuestos>${money(Number(nota.subtotal_0) + Number(nota.subtotal_5) + Number(nota.subtotal_15))}</totalSinImpuestos><valorModificacion>${money(nota.total)}</valorModificacion><moneda>DOLAR</moneda><totalConImpuestos>${groups.map((g) => `<totalImpuesto><codigo>2</codigo><codigoPorcentaje>${ivaCode[g.v]}</codigoPorcentaje><baseImponible>${money(g.base)}</baseImponible><valor>${money(g.tax)}</valor></totalImpuesto>`).join("")}</totalConImpuestos><motivo>${escape(motivo)}</motivo></infoNotaCredito><detalles>${lines.map((l, i) => `<detalle><codigoInterno>ITEM-${i + 1}</codigoInterno><descripcion>${escape(l.descripcion)}</descripcion><cantidad>${Number(l.cantidad).toFixed(2)}</cantidad><precioUnitario>${Number(l.precio).toFixed(6)}</precioUnitario><descuento>${money(l.descuento)}</descuento><precioTotalSinImpuesto>${money(l.base)}</precioTotalSinImpuesto><impuestos><impuesto><codigo>2</codigo><codigoPorcentaje>${ivaCode[l.iva]}</codigoPorcentaje><tarifa>${Number(l.iva).toFixed(2)}</tarifa><baseImponible>${money(l.base)}</baseImponible><valor>${money(l.impuesto)}</valor></impuesto></impuestos></detalle>`).join("")}</detalles>${infoAdicionalProveedor()}</notaCredito>`;
   return { key, xml };
 }
 /** No es una firma XAdES-BES. Nunca genera ds:Signature ni usa un certificado real. */

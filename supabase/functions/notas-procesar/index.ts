@@ -84,6 +84,24 @@ Deno.serve(async (req) => {
       .eq("factura_id", nota.factura_id)
       .order("id");
     if (lErr || !lines?.length) throw Error("Detalles no disponibles");
+    // Datos fiscales vigentes del emisor (régimen, contabilidad, agente de
+    // retención y contribuyente especial) justo antes de armar el XML de la
+    // nota; el snapshot de la factura vieja no trae los dos últimos.
+    const { data: empresa } = await db
+      .from("empresas")
+      .select(
+        "ruta_p12, regimen, obligado_contabilidad, agente_retencion, contribuyente_especial",
+      )
+      .eq("id", tenant)
+      .maybeSingle();
+    if (empresa)
+      factura.emisor_snapshot = {
+        ...factura.emisor_snapshot,
+        regimen: empresa.regimen,
+        obligado_contabilidad: empresa.obligado_contabilidad,
+        agente_retencion: empresa.agente_retencion,
+        contribuyente_especial: empresa.contribuyente_especial,
+      };
     // Misma disciplina que sri-procesar: clave y XML se persisten antes del
     // primer envío y un reintento reutiliza la misma clave (unique).
     let draft: { key: string; xml: string };
@@ -117,12 +135,8 @@ Deno.serve(async (req) => {
       simulacion = mode !== "real",
       mensaje: string;
     if (mode === "real") {
-      const { data: empresa, error: eError } = await db
-        .from("empresas")
-        .select("ruta_p12")
-        .eq("id", tenant)
-        .single();
-      if (eError || !empresa?.ruta_p12)
+      // La fila de la empresa ya se cargó antes de generar el XML.
+      if (!empresa?.ruta_p12)
         throw Error("Empresa sin .p12 registrado");
       // Contraseña cifrada en Vault: sólo service_role puede descifrarla.
       const { data: p12Password, error: pwError } = await db.rpc(

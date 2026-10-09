@@ -80,6 +80,25 @@ Deno.serve(async (req) => {
       .eq("factura_id", id)
       .order("id");
     if (error || !lines?.length) throw Error("Detalles no disponibles");
+    // Datos fiscales vigentes del emisor: el snapshot de la factura no trae
+    // agente de retención ni contribuyente especial (columnas nuevas), y el
+    // régimen/contabilidad se leen aquí para que el XML refleje lo vigente
+    // al momento de emitir. Si la consulta falla se usa sólo el snapshot.
+    const { data: empresa } = await db
+      .from("empresas")
+      .select(
+        "ruta_p12, regimen, obligado_contabilidad, agente_retencion, contribuyente_especial",
+      )
+      .eq("id", tenant)
+      .maybeSingle();
+    if (empresa)
+      invoice.emisor_snapshot = {
+        ...invoice.emisor_snapshot,
+        regimen: empresa.regimen,
+        obligado_contabilidad: empresa.obligado_contabilidad,
+        agente_retencion: empresa.agente_retencion,
+        contribuyente_especial: empresa.contribuyente_especial,
+      };
     // Clave de acceso y XML se persisten ANTES del primer envío: un
     // reintento reutiliza la misma clave (la columna es unique) en vez de
     // generar otra, y si perdimos la reclamación se aborta antes de firmar.
@@ -109,12 +128,8 @@ Deno.serve(async (req) => {
       mensaje: string;
     if (mode === "real") {
       // Ruta real: .p12 de la empresa + firma XAdES + SOAP al SRI.
-      const { data: empresa, error: eError } = await db
-        .from("empresas")
-        .select("ruta_p12")
-        .eq("id", tenant)
-        .single();
-      if (eError || !empresa?.ruta_p12)
+      // La fila de la empresa ya se cargó antes de generar el XML.
+      if (!empresa?.ruta_p12)
         throw Error("Empresa sin .p12 registrado");
       // Contraseña cifrada en Vault: sólo service_role puede descifrarla.
       const { data: p12Password, error: pwError } = await db.rpc(

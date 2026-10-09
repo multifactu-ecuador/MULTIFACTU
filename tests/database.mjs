@@ -566,6 +566,18 @@ const factId = (
 ).rows[0].crear_factura;
 assert.ok(factId);
 await db.query(`update public.empresas set direccion='Nueva dirección' where id=$1`, [ta]);
+// Anexos 21/22 y contribuyente especial (Ficha Técnica 2.34): los números de
+// resolución sólo se guardan en el formato que el XML emitirá ante el SRI.
+await rejects(`update public.empresas set agente_retencion='0123' where id=$1`, [ta]);
+await rejects(`update public.empresas set contribuyente_especial='' where id=$1`, [ta]);
+await db.query(
+  `update public.empresas set agente_retencion='1234', contribuyente_especial='5368' where id=$1`,
+  [ta],
+);
+await db.query(
+  `update public.empresas set agente_retencion=null, contribuyente_especial=null where id=$1`,
+  [ta],
+);
 const audit = (
   await db.query(
     `select accion, entidad, detalle->>'estado' as estado from public.auditoria where tenant_id=$1 order by creado_en`,

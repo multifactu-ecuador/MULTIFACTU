@@ -50,6 +50,15 @@ export interface RideData {
   }>;
   numeroAutorizacion?: string;
   fechaAutorizacion?: string;
+  /** Régimen y parámetros fiscales del emisor (Anexos 21, 22 y 26 de la Ficha Técnica 2.34). */
+  regimen?: "general" | "rimpe_emprendedor" | "rimpe_negocio_popular";
+  obligadoContabilidad?: boolean;
+  /** N° de resolución de agente de retención ya normalizado (sin ceros). */
+  agenteRetencion?: string;
+  /** N° de resolución de contribuyente especial. */
+  contribuyenteEspecial?: string;
+  /** RUC del proveedor del sistema (Anexo 26); sólo se imprime si está configurado. */
+  rucProveedor?: string;
 }
 
 const money = (v: number) => v.toFixed(2);
@@ -79,8 +88,27 @@ export async function generateRidePdf(data: RideData): Promise<Uint8Array> {
   drawText(`NOMBRE COMERCIAL: ${data.nombreComercial}`, 30, y - 24, 8);
   drawText(`DIR. MATRIZ: ${data.direccionMatriz}`, 30, y - 36, 8);
   drawText(`DIR. ESTABLECIMIENTO: ${data.direccionEstablecimiento}`, 30, y - 48, 8);
-  drawText(`AMBIENTE: ${data.ambiente === "1" ? "PRUEBAS" : "PRODUCCIÓN"}`, 30, y - 60, 8, true);
-  y -= 80;
+  // Régimen del emisor: mismas leyendas que el XML (Anexos 21 y 22).
+  let cabecera = y - 60;
+  if (data.regimen === "rimpe_emprendedor") {
+    drawText("CONTRIBUYENTE RÉGIMEN RIMPE", 30, cabecera, 8, true);
+    cabecera -= 12;
+  } else if (data.regimen === "rimpe_negocio_popular") {
+    drawText("CONTRIBUYENTE NEGOCIO POPULAR - RÉGIMEN RIMPE", 30, cabecera, 8, true);
+    cabecera -= 12;
+  }
+  if (data.agenteRetencion) {
+    drawText(`AGENTE DE RETENCIÓN · RESOLUCIÓN ${data.agenteRetencion}`, 30, cabecera, 8, true);
+    cabecera -= 12;
+  }
+  if (data.contribuyenteEspecial) {
+    drawText(`CONTRIBUYENTE ESPECIAL · RESOLUCIÓN ${data.contribuyenteEspecial}`, 30, cabecera, 8, true);
+    cabecera -= 12;
+  }
+  drawText(`OBLIGADO A LLEVAR CONTABILIDAD: ${data.obligadoContabilidad ? "SI" : "NO"}`, 30, cabecera, 8);
+  cabecera -= 12;
+  drawText(`AMBIENTE: ${data.ambiente === "1" ? "PRUEBAS" : "PRODUCCIÓN"}`, 30, cabecera, 8, true);
+  y = cabecera - 20;
 
   // QR
   const qrDataUrl = await QRCode.toDataURL(data.claveAcceso, { width: 100, margin: 1 });
@@ -150,6 +178,14 @@ export async function generateRidePdf(data: RideData): Promise<Uint8Array> {
     y -= 14;
   });
   y -= 10;
+
+  if (data.rucProveedor) {
+    // Anexo 26: el campo "RUC Proveedor" forma parte de la información
+    // adicional del comprobante y el RIDE debe mostrarlo.
+    drawText("INFORMACIÓN ADICIONAL", 30, y, 8, true);
+    drawText(`RUC PROVEEDOR: ${data.rucProveedor}`, 30, y - 14, 8);
+    y -= 30;
+  }
 
   drawText("ESTE DOCUMENTO ES UNA REPRESENTACIÓN GRÁFICA DE UN COMPROBANTE ELECTRÓNICO", 30, y, 7, true);
   drawText(`Clave de acceso: ${data.claveAcceso}`, 30, y - 14, 6);

@@ -42,10 +42,11 @@ const yes = (value: unknown) => text(value).toUpperCase() === "SI";
 
 function internalRegime(regimen: string, categoria: string): RegimenInterno {
   const value = `${regimen} ${categoria}`.toUpperCase();
-  if (value.includes("RIMPE") && value.includes("NEGOCIO POPULAR"))
-    return "rimpe_negocio_popular";
-  if (value.includes("RIMPE") && value.includes("EMPRENDEDOR"))
-    return "rimpe_emprendedor";
+  if (value.includes("NEGOCIO POPULAR")) return "rimpe_negocio_popular";
+  // Cualquier mención a RIMPE es RIMPE: si el proveedor dice "RIMPE" sin
+  // calificar (p. ej. "RIMPE GENERAL"), corresponde la leyenda del Anexo 22
+  // "CONTRIBUYENTE RÉGIMEN RIMPE", no emitir nada y quedar fuera de norma.
+  if (value.includes("RIMPE")) return "rimpe_emprendedor";
   return "general";
 }
 
