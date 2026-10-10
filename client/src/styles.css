@@ -1345,6 +1345,54 @@
   color: #161619;
   border-radius: 2px;
 }
+/* Interruptor mensual/anual de la página de precios (Precios.tsx). */
+.ciclo-toggle {
+  display: flex;
+  width: fit-content;
+  margin: 30px auto 0;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid #32323a;
+  border-radius: 999px;
+  background: #0d0d10;
+}
+.ciclo-toggle button {
+  border: 0;
+  background: transparent;
+  color: #b4b4be;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 9px 22px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.ciclo-toggle button.activa {
+  background: #cdff28;
+  color: #161619;
+}
+.ciclo-toggle button span {
+  display: block;
+  font-size: 9px;
+  font-weight: 500;
+  color: #777783;
+}
+.ciclo-toggle button.activa span {
+  color: #3f4a12;
+}
+/* Aviso de configuración/error en la página de precios. */
+.precios-aviso {
+  border: 1px solid #6b4a00;
+  background: #201a05;
+  color: #f4b400;
+  padding: 14px 18px;
+  font-size: 13px;
+  margin: 24px 0;
+}
+.precios-aviso ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+}
 .scope-note {
   color: #777783;
   font-size: 11px !important;

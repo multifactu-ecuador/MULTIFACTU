@@ -35,6 +35,8 @@ import BusinessIntelligence from "./pages/BusinessIntelligence";
 import Proformas from "./pages/Proformas";
 import QuotePublic from "./pages/QuotePublic";
 import Assistant from "./pages/Assistant";
+import Precios from "./pages/Precios";
+import Welcome from "./pages/Welcome";
 export default function App() {
   return (
     <BrowserRouter>
@@ -54,6 +56,8 @@ export default function App() {
           <Route path="/cumplimiento-legal" element={<CumplimientoLegal />} />
           <Route path="/facturacion-electronica" element={<ElectronicInvoicing />} />
           <Route path="/inteligencia-negocios" element={<BusinessIntelligence />} />
+          <Route path="/precios" element={<Precios />} />
+          <Route path="/welcome" element={<Welcome />} />
           <Route path="/cotizacion/:token" element={<QuotePublic />} />
           <Route element={<ProtectedRoute />}>
             <Route path="/onboarding" element={<Onboarding />} />
