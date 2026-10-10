@@ -7,6 +7,7 @@
 // automática sin tocar el período ya pagado. En modo demo no se cobra.
 import { createClient } from "npm:@supabase/supabase-js@2.117.2";
 import { guardar } from "../_shared/guard.ts";
+import { acaoDe, listaOrigenes } from "../_shared/origen.ts";
 import { verificarEntorno } from "../_shared/verificar.ts";
 import {
   PLAN_BASE,
@@ -31,9 +32,9 @@ interface SuscripcionPaypal {
 }
 
 Deno.serve(async (req) => {
-  const origin = Deno.env.get("APP_ORIGIN")?.replace(/\/$/, "");
+  const origenes = listaOrigenes();
   const cors = {
-    "Access-Control-Allow-Origin": origin ?? "http://localhost:5173",
+    "Access-Control-Allow-Origin": acaoDe(req),
     "Access-Control-Allow-Headers":
       "authorization,apikey,content-type,x-client-info",
     "Access-Control-Allow-Methods": "POST,OPTIONS",
@@ -46,7 +47,7 @@ Deno.serve(async (req) => {
     });
   const url = Deno.env.get("SUPABASE_URL"),
     secret = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!url || !secret || !origin)
+  if (!url || !secret || !origenes.length)
     return json({ error: "Servicio no configurado" }, 503);
   const admin = createClient(url, secret, {
     auth: { persistSession: false, autoRefreshToken: false },
@@ -184,8 +185,10 @@ Deno.serve(async (req) => {
         custom_id: `${tenant}:${order.client_tx}`,
         application_context: {
           brand_name: "MULTIFACTU",
-          return_url: origin + "/app/planes",
-          cancel_url: origin + "/app/planes?cancelled=1",
+          // PayPal exige URLs únicas: se usa el origen primario (el
+          // primero de APP_ORIGIN).
+          return_url: origenes[0] + "/app/planes",
+          cancel_url: origenes[0] + "/app/planes?cancelled=1",
           user_action: "SUBSCRIBE_NOW",
           locale: "es-ES",
           payment_method: {

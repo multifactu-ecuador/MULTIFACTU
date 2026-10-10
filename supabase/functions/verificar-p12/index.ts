@@ -5,6 +5,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2.117.2";
 import { verificarCertificadoP12 } from "../_shared/p12-check.ts";
 import { guardar } from "../_shared/guard.ts";
+import { acaoDe, listaOrigenes } from "../_shared/origen.ts";
 import { verificarEntorno } from "../_shared/verificar.ts";
 
 const MAX_INTENTOS = 10;
@@ -20,9 +21,9 @@ const MENSAJES: Record<string, string> = {
 };
 
 Deno.serve(async (req) => {
-  const origin = Deno.env.get("APP_ORIGIN")?.replace(/\/$/, "");
+  const origenes = listaOrigenes();
   const cors = {
-    "Access-Control-Allow-Origin": origin ?? "http://localhost:5173",
+    "Access-Control-Allow-Origin": acaoDe(req),
     "Access-Control-Allow-Headers": "authorization,apikey,content-type,x-client-info",
     "Access-Control-Allow-Methods": "POST,OPTIONS",
     Vary: "Origin",
@@ -34,7 +35,7 @@ Deno.serve(async (req) => {
     });
   const url = Deno.env.get("SUPABASE_URL"),
     secret = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!url || !secret || !origin) return json({ error: "Servicio no configurado" }, 503);
+  if (!url || !secret || !origenes.length) return json({ error: "Servicio no configurado" }, 503);
   const admin = createClient(url, secret, {
     auth: { persistSession: false, autoRefreshToken: false },
   });

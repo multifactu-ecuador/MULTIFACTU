@@ -6,4 +6,4 @@ Disallow: /login
 Disallow: /registro
 Disallow: /cotizacion/
 
-Sitemap: https://multifactu.vercel.app/sitemap.xml
+Sitemap: https://multifactuec.lat/sitemap.xml

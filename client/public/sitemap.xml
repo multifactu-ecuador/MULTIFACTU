@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://multifactu.vercel.app/</loc><changefreq>monthly</changefreq><priority>1.0</priority></url>
-  <url><loc>https://multifactu.vercel.app/facturacion-electronica</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://multifactu.vercel.app/inteligencia-negocios</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://multifactu.vercel.app/alquileres</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
-  <url><loc>https://multifactu.vercel.app/seguridad</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
-  <url><loc>https://multifactu.vercel.app/terminos</loc><changefreq>yearly</changefreq><priority>0.5</priority></url>
-  <url><loc>https://multifactu.vercel.app/privacidad</loc><changefreq>yearly</changefreq><priority>0.5</priority></url>
-  <url><loc>https://multifactu.vercel.app/reembolsos</loc><changefreq>yearly</changefreq><priority>0.5</priority></url>
-  <url><loc>https://multifactu.vercel.app/cookies</loc><changefreq>yearly</changefreq><priority>0.4</priority></url>
-  <url><loc>https://multifactu.vercel.app/cumplimiento-legal</loc><changefreq>yearly</changefreq><priority>0.4</priority></url>
-  <url><loc>https://multifactu.vercel.app/contrato-encargo</loc><changefreq>yearly</changefreq><priority>0.4</priority></url>
-  <url><loc>https://multifactu.vercel.app/politica-seguridad</loc><changefreq>yearly</changefreq><priority>0.4</priority></url>
+  <url><loc>https://multifactuec.lat/</loc><changefreq>monthly</changefreq><priority>1.0</priority></url>
+  <url><loc>https://multifactuec.lat/facturacion-electronica</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://multifactuec.lat/inteligencia-negocios</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://multifactuec.lat/alquileres</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://multifactuec.lat/seguridad</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://multifactuec.lat/terminos</loc><changefreq>yearly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://multifactuec.lat/privacidad</loc><changefreq>yearly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://multifactuec.lat/reembolsos</loc><changefreq>yearly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://multifactuec.lat/cookies</loc><changefreq>yearly</changefreq><priority>0.4</priority></url>
+  <url><loc>https://multifactuec.lat/cumplimiento-legal</loc><changefreq>yearly</changefreq><priority>0.4</priority></url>
+  <url><loc>https://multifactuec.lat/contrato-encargo</loc><changefreq>yearly</changefreq><priority>0.4</priority></url>
+  <url><loc>https://multifactuec.lat/politica-seguridad</loc><changefreq>yearly</changefreq><priority>0.4</priority></url>
 </urlset>

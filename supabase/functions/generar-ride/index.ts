@@ -2,15 +2,17 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { generateRidePdf } from "../_shared/ride-pdf.ts";
 import { RUC_PROVEEDOR } from "../_shared/sri.ts";
 import { guardar } from "../_shared/guard.ts";
+import { acaoDe } from "../_shared/origen.ts";
 import { verificarEntorno } from "../_shared/verificar.ts";
 
-const origin = Deno.env.get("APP_ORIGIN")?.replace(/\/$/, "");
-const corsHeaders = {
-  "Access-Control-Allow-Origin": origin ?? "http://localhost:5173",
+// Cabeceras CORS por petición: el navegador exige eco exacto del Origin,
+// y APP_ORIGIN admite varios orígenes (transición de dominio).
+const cabeceras = (req: Request) => ({
+  "Access-Control-Allow-Origin": acaoDe(req),
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   Vary: "Origin",
-};
+});
 
 interface InvoiceRow {
   id: string;
@@ -37,20 +39,20 @@ interface InvoiceRow {
   cliente_snapshot: Record<string, string>;
 }
 
-const json = (data: unknown, status = 200) =>
+const json = (req: Request, data: unknown, status = 200) =>
   new Response(JSON.stringify(data), {
     status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    headers: { ...cabeceras(req), "Content-Type": "application/json" },
   });
 
 Deno.serve(async (req) => {
   const url = Deno.env.get("SUPABASE_URL");
   const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!url || !key) return json({ error: "Backend no configurado" }, 503);
+  if (!url || !key) return json(req, { error: "Backend no configurado" }, 503);
   const supabase = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
 
   // Denegar por defecto: origen, método y sesión de usuario en un solo punto.
-  const ctx = await guardar(req, "/generar-ride", corsHeaders, verificarEntorno);
+  const ctx = await guardar(req, "/generar-ride", cabeceras(req), verificarEntorno);
   if (ctx instanceof Response) return ctx;
 
   const body = await req.json().catch(() => null) as { id?: unknown } | null;
@@ -58,7 +60,7 @@ Deno.serve(async (req) => {
   // cadena (evita tráfico basura contra PostgREST).
   const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const id = typeof body?.id === "string" && UUID.test(body.id) ? body.id : null;
-  if (!id) return json({ error: "ID requerido" }, 400);
+  if (!id) return json(req, { error: "ID requerido" }, 400);
 
   const { data: inv, error } = await supabase
     .from("facturas_sri")
@@ -66,14 +68,14 @@ Deno.serve(async (req) => {
     .eq("id", id)
     .eq("tenant_id", ctx.tenant)
     .maybeSingle();
-  if (error || !inv) return json({ error: "Factura no encontrada" }, 404);
+  if (error || !inv) return json(req, { error: "Factura no encontrada" }, 404);
 
   const { data: det, error: detailsError } = await supabase
     .from("factura_detalles")
     .select("*")
     .eq("factura_id", id)
     .eq("tenant_id", ctx.tenant);
-  if (detailsError) return json({ error: "No se pudieron cargar los detalles" }, 500);
+  if (detailsError) return json(req, { error: "No se pudieron cargar los detalles" }, 500);
   const detalles = (det ?? []) as any[];
 
   // Datos fiscales vigentes del emisor para las leyendas de régimen del
@@ -151,12 +153,12 @@ Deno.serve(async (req) => {
     return new Response(pdfBytes as any, {
       headers: {
         "Content-Type": "application/pdf",
-        ...corsHeaders,
+        ...cabeceras(req),
         "Content-Disposition": `attachment; filename="RIDE-${accessKey.slice(0, 12)}.pdf"`,
       },
     });
   } catch (e) {
     console.error("Error generando RIDE:", e);
-    return json({ error: "Error generando PDF" }, 500);
+    return json(req, { error: "Error generando PDF" }, 500);
   }
 });

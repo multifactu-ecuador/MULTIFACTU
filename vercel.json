@@ -23,6 +23,9 @@
       ]
     }
   ],
+  "redirects": [
+    { "source": "/(.*)", "has": [{ "type": "host", "value": "multifactu.vercel.app" }], "destination": "https://multifactuec.lat/$1", "permanent": true }
+  ],
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ]

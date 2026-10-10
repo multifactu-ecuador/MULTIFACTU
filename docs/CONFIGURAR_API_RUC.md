@@ -10,7 +10,7 @@ Configura estos secretos en el proyecto de Supabase antes de desplegar la
 función:
 
 ```text
-APP_ORIGIN=https://tu-dominio-vercel.app
+APP_ORIGIN=https://multifactuec.lat
 RUC_LOOKUP_API_URL=https://api.proveedor.ec/contribuyentes/{ruc}
 RUC_LOOKUP_API_TOKEN=secreto-del-proveedor
 ```

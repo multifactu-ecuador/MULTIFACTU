@@ -90,11 +90,18 @@ export async function guardar(
   const nivel = RUTAS[ruta];
   if (!nivel) return json({ error: "Ruta no autorizada" }, 403);
 
-  // 2) Origen estricto: si el navegador envía Origin, debe coincidir con
-  //    APP_ORIGIN. Sin cabecera Origin (servidor → servidor) no aplica.
-  const origin = Deno.env.get("APP_ORIGIN")?.replace(/\/$/, "");
-  const dado = req.headers.get("origin");
-  if (dado && dado !== origin) return json({ error: "Origen no permitido" }, 403);
+  // 2) Origen estricto: si el navegador envía Origin, debe estar en la
+  //    lista de APP_ORIGIN (varios separados por coma durante la
+  //    transición de dominio). Sin cabecera Origin (servidor → servidor)
+  //    no aplica. El guard no importa módulos (se testea en Node), así
+  //    que la lista se parsea aquí.
+  const permitidos = (Deno.env.get("APP_ORIGIN") ?? "")
+    .split(",")
+    .map((o: string) => o.trim().replace(/\/$/, ""))
+    .filter(Boolean);
+  const dado = req.headers.get("origin")?.replace(/\/$/, "");
+  if (dado && !permitidos.includes(dado))
+    return json({ error: "Origen no permitido" }, 403);
 
   // 3) Preflight CORS y método único.
   if (req.method === "OPTIONS")

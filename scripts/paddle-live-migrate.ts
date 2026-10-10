@@ -240,7 +240,7 @@ async function migrar() {
     const { json } = await rest(claveLive, "POST", "/client-tokens", {
       name: "MULTIFACTU web (precios y checkout)",
       description:
-        "Página de precios y checkout de multifactu.vercel.app (Paddle.js).",
+        "Página de precios y checkout de multifactuec.lat (Paddle.js).",
     });
     const datos = json.data as { token?: string; id?: string } | undefined;
     if (!datos?.token?.startsWith("live_")) {

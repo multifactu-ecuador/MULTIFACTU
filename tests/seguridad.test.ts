@@ -8,10 +8,12 @@ import { fileURLToPath } from "node:url";
 import { RUTAS, guardar, type Verificador } from "../supabase/functions/_shared/guard.ts";
 
 const raiz = join(dirname(fileURLToPath(import.meta.url)), "..");
-const ORIGEN = "https://multifactu.vercel.app";
+// Transición de dominio: APP_ORIGIN lleva ambos (primario + heredado).
+const ORIGEN = "https://multifactuec.lat";
+const ORIGEN_HEREDADO = "https://multifactu.vercel.app";
 
 const ENTORNO: Record<string, string | undefined> = {
-  APP_ORIGIN: ORIGEN,
+  APP_ORIGIN: `${ORIGEN},${ORIGEN_HEREDADO}`,
   SRI_WEBHOOK_SECRET: "s".repeat(64),
   CRON_SECRET: "c".repeat(48),
 };
@@ -109,6 +111,20 @@ test("un origen distinto de APP_ORIGIN se deniega con 403", async () => {
   assert.ok(respuesta instanceof Response);
   assert.equal(respuesta.status, 403);
   assert.equal((await cuerpo(respuesta)).error, "Origen no permitido");
+});
+
+test("la transición de dominio admite ambos orígenes de APP_ORIGIN", async () => {
+  for (const permitido of [ORIGEN, ORIGEN_HEREDADO]) {
+    const ctx = await guardar(
+      peticion("/generar-ride", {
+        headers: { authorization: "Bearer valido", origin: permitido },
+      }),
+      "/generar-ride",
+      {},
+      conSesion({ tenant_id: "t", rol: "ADMIN" }),
+    );
+    assert.ok(!(ctx instanceof Response), `${permitido} debe pasar`);
+  }
 });
 
 test("el nivel webhook exige el secreto compartido", async () => {
