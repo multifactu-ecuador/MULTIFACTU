@@ -762,6 +762,45 @@ await rejects(`select * from public.rufo_control`);
 await owner();
 await db.query(`update public.usuarios_perfiles set rol='ADMIN' where tenant_id=$1`, [ta]);
 
+// ── Paddle: espejo de suscripciones y ayuda de acceso ─────────────────────
+await owner();
+await db.query(
+  `insert into public.paddle_clientes(customer_id,email) values
+    ('ctm_a','ana@ejemplo.com'),
+    ('ctm_b','beto@ejemplo.com')`,
+);
+await db.query(
+  `insert into public.paddle_suscripciones(subscription_id,customer_id,estado,price_id,product_id,cambio_accion,cambio_en) values
+    ('sub_active','ctm_a','active','pri_1','pro_1',null,null),
+    ('sub_trial','ctm_a','trialing','pri_1','pro_1',null,null),
+    ('sub_past','ctm_a','past_due','pri_1','pro_1',null,null),
+    ('sub_paused','ctm_a','paused','pri_1','pro_1',null,null),
+    ('sub_canceled','ctm_a','canceled','pri_1','pro_1',null,null),
+    ('sub_aviso','ctm_a','active','pri_1','pro_1','cancel','2026-11-01T00:00:00Z')`,
+);
+const paddleAcceso = async (id) =>
+  (await db.query(`select private.paddle_acceso($1) ok`, [id])).rows[0].ok;
+assert.equal(await paddleAcceso("sub_active"), true);
+assert.equal(await paddleAcceso("sub_trial"), true);
+assert.equal(await paddleAcceso("sub_past"), true);
+assert.equal(await paddleAcceso("sub_paused"), false);
+assert.equal(await paddleAcceso("sub_canceled"), false);
+// Un cambio programado de cancelacion NO baja el acceso: recortarlo es
+// trabajo del estado real 'canceled' cuando Paddle lo confirma.
+assert.equal(await paddleAcceso("sub_aviso"), true);
+// Suscripcion desconocida: denegar por defecto.
+assert.equal(await paddleAcceso("sub_inexistente"), false);
+// RLS cerrado: el navegador ni lee ni escribe, y tampoco ejecuta la ayuda.
+await user(A);
+await rejects(`select * from public.paddle_clientes`);
+await rejects(
+  `insert into public.paddle_clientes(customer_id,email) values('ctm_x','x@ejemplo.com')`,
+);
+await rejects(`select * from public.paddle_suscripciones`);
+await rejects(`select * from public.paddle_transacciones`);
+await rejects(`select private.paddle_acceso('sub_active')`);
+await owner();
+
 await db.close();
 console.log(
   "PASS: SQL ejecutado en PostgreSQL WASM; RLS, trigger, aislamiento, privilegios, finanzas, stock, idempotencia, storage, vencimiento, vault y aprendizaje de RUFO.",

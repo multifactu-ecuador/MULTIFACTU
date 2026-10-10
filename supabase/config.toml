@@ -26,3 +26,13 @@ verify_jwt = false
 [functions.asistente-web]
 # Asistente público de la web: sin sesión; límite por IP dentro de la función.
 verify_jwt = false
+
+[functions.paddle-webhook]
+# Webhook servidor-servidor de Paddle: la autenticación es la firma HMAC
+# (webhooks.unmarshal con el secreto de la notificación), no un JWT.
+verify_jwt = false
+
+[functions.paddle-portal]
+# Se valida sesión de usuario dentro de la función; el customer_id de
+# Paddle se resuelve en el servidor por el email del perfil.
+verify_jwt = false

@@ -16,7 +16,8 @@ export default function Account() {
     [actual, setActual] = useState(""),
     [nueva, setNueva] = useState(""),
     [verActual, setVerActual] = useState(false),
-    [verNueva, setVerNueva] = useState(false);
+    [verNueva, setVerNueva] = useState(false),
+    [portal, setPortal] = useState(false);
 
   // Cambio de contraseña vía Clerk (equivalente al antiguo re-auth +
   // updateUser de Supabase Auth): Clerk valida la contraseña actual y
@@ -141,6 +142,35 @@ export default function Account() {
       setError(e instanceof Error ? e.message : "No se pudo cambiar la contraseña");
     } finally {
       setBusy(false);
+    }
+  }
+
+  // Portal de cliente de Paddle: el servidor minte una sesión fresca con
+  // el customer_id resuelto por el email de MI sesión (el cliente nunca
+  // envía ids) y el navegador sólo sigue la URL devuelta.
+  async function abrirPortalPaddle() {
+    setPortal(true);
+    setError("");
+    setMessage("");
+    try {
+      const r = await db().functions.invoke("paddle-portal", { body: {} });
+      if (r.error) {
+        const contexto = (r.error as { context?: Response }).context;
+        const detalle = contexto
+          ? ((await contexto.json().catch(() => null)) as {
+              error?: string;
+            } | null)
+          : null;
+        throw Error(
+          detalle?.error ?? "No se pudo abrir el portal de Paddle",
+        );
+      }
+      const url = (r.data as { url?: string } | null)?.url;
+      if (!url) throw Error("No se pudo abrir el portal de Paddle");
+      window.location.assign(url);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "No se pudo abrir el portal");
+      setPortal(false);
     }
   }
 
@@ -270,6 +300,17 @@ export default function Account() {
           cambiarla.
         </small>
       </form>
+      <section className="card">
+        <h2>Suscripción y facturación</h2>
+        <p>
+          Gestiona tu plan, tu medio de pago y tus facturas en el portal
+          seguro de Paddle. Cancelar desde ahí detiene la renovación y el
+          acceso sigue activo hasta el fin del período pagado.
+        </p>
+        <button onClick={() => void abrirPortalPaddle()} disabled={portal}>
+          {portal ? "Abriendo…" : "Gestionar mi suscripción"}
+        </button>
+      </section>
       <section className="card security-summary">
         <h2>Seguridad de tu cuenta</h2>
         <p className="summary-lead">

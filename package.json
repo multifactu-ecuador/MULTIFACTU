@@ -13,7 +13,7 @@
     "audit:gate": "node tests/audit-gate.mjs",
     "test:server": "node --test --experimental-strip-types server/tests/*.test.ts",
     "test:sql": "node tests/database.mjs",
-    "check:edge": "deno check supabase/functions/sri-procesar/index.ts supabase/functions/planes-pago/index.ts supabase/functions/pagos-webhook/index.ts supabase/functions/notas-procesar/index.ts supabase/functions/procesar-programadas/index.ts supabase/functions/generar-ride/index.ts supabase/functions/consultar-ruc/index.ts supabase/functions/verificar-p12/index.ts supabase/functions/asistente/index.ts supabase/functions/asistente-web/index.ts",
+    "check:edge": "deno check supabase/functions/sri-procesar/index.ts supabase/functions/planes-pago/index.ts supabase/functions/pagos-webhook/index.ts supabase/functions/notas-procesar/index.ts supabase/functions/procesar-programadas/index.ts supabase/functions/generar-ride/index.ts supabase/functions/consultar-ruc/index.ts supabase/functions/verificar-p12/index.ts supabase/functions/asistente/index.ts supabase/functions/asistente-web/index.ts supabase/functions/paddle-webhook/index.ts supabase/functions/paddle-portal/index.ts",
     "typecheck:server": "tsc -p server/tsconfig.json"
   },
   "devDependencies": {

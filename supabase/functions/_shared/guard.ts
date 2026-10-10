@@ -47,6 +47,8 @@ export const RUTAS: Record<string, Nivel> = {
   "/generar-ride": "usuario",
   "/notas-procesar": "webhook",
   "/pagos-webhook": "publico",
+  "/paddle-portal": "usuario",
+  "/paddle-webhook": "publico",
   "/planes-pago": "admin",
   "/procesar-programadas": "cron",
   "/sri-procesar": "webhook",
