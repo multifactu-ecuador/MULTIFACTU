@@ -7,8 +7,10 @@ import { LEGAL_UPDATED_DATE, REFUND_VERSION } from "../lib/legal";
  * Política de reembolsos alineada con la Ley Orgánica de Defensa del
  * Consumidor de Ecuador (Ley 21, RO Suplemento 116 de 10-jul-2000, en su
  * reforma vigente: art. 45 → 15 días para servicios, cesación inmediata,
- * sin notas de crédito compensatorias). Forma parte de los Términos de
- * servicio.
+ * sin notas de crédito compensatorias) y con la extensión voluntaria a
+ * treinta (30) días —más favorable al consumidor— concedida por
+ * MULTIFACTU y ejecutada a través de Paddle (merchant of record). Forma
+ * parte de los Términos de servicio.
  */
 export default function RefundPolicy() {
   return (
@@ -45,18 +47,20 @@ export default function RefundPolicy() {
           tus datos.
         </p>
 
-        <h2>3. Derecho de devolución (15 días)</h2>
+        <h2>3. Derecho de devolución (30 días)</h2>
         <p>
           Si contrataste un plan pagado, el artículo 45 de la Ley Orgánica de
           Defensa del Consumidor te reconoce el derecho de devolución dentro
           de los <b>quince (15) días naturales</b> siguientes a la recepción
-          del servicio, ejercible mediante la cesación inmediata del contrato.
-          Ejercido ese derecho dentro del plazo, MULTIFACTU reembolsa el{" "}
-          <b>100% de lo pagado en dinero</b> —sin notas de crédito ni bienes o
-          servicios compensatorios—, a través del mismo medio de pago
-          utilizado, dentro de un plazo máximo de <b>quince (15) días
-          hábiles</b> desde la solicitud, previa verificación de la identidad
-          de la cuenta y del pago.
+          del servicio. MULTIFACTU extiende ese derecho, de manera voluntaria y
+          más favorable para ti, a <b>treinta (30) días naturales</b>{" "}
+          siguientes a la recepción del servicio, ejercible mediante la cesación
+          inmediata del contrato. Ejercido ese derecho dentro del plazo,
+          MULTIFACTU reembolsa el <b>100% de lo pagado en dinero</b> —sin notas
+          de crédito ni bienes o servicios compensatorios—, a través del mismo
+          medio de pago utilizado, dentro de un plazo máximo de{" "}
+          <b>quince (15) días hábiles</b> desde la solicitud, previa
+          verificación de la identidad de la cuenta y del pago.
         </p>
 
         <h2>4. Errores de cobro, montos incorrectos o pagos duplicados</h2>
@@ -80,8 +84,8 @@ export default function RefundPolicy() {
         <h2>6. Cancelación y períodos utilizados</h2>
         <p>
           Cancelar impide renovaciones futuras, pero no elimina obligaciones de
-          pago ya causadas. Fuera del plazo de quince (15) días del artículo
-          45, los períodos mensuales efectivamente iniciados no son
+          pago ya causadas. Fuera del plazo de treinta (30) días del derecho de
+          devolución, los períodos mensuales efectivamente iniciados no son
           reembolsables; los planes de período mayor se reembolsan de forma
           proporcional por los meses restantes no utilizados. Esto complementa
           —y nunca contradice— la cláusula de planes de los Términos de

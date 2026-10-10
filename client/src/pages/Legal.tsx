@@ -80,6 +80,19 @@ export default function Legal() {
           reembolsos se rigen por la <Link to="/reembolsos">Política de
           reembolsos</Link>, que forma parte integrante de estos Términos.
         </p>
+        <p>
+          Los cobros de los planes los procesa <b>Paddle</b> (Paddle.com Market
+          Limited), que actúa como comerciante del registro (<i>Merchant of
+          Record</i>) del pago. En consecuencia, el pago se realiza
+          directamente ante Paddle, que emite el comprobante correspondiente,
+          tramita y declara los impuestos aplicables conforme a su condición de
+          comerciante y ejecuta los reembolsos conforme a la política
+          aplicable. El descriptor que aparece en el extracto bancario es
+          «MULTIFACTU». La suscripción, el acceso y los datos del negocio
+          siguen siendo de MULTIFACTU; el Cliente puede gestionar su plan y su
+          método de pago desde su cuenta o mediante el portal de cliente que
+          Paddle envía por correo.
+        </p>
         <h2>6. RUFO, asistente de inteligencia artificial</h2>
         <p>
           RUFO responde consultas con los datos del negocio del Cliente
