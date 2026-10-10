@@ -12,13 +12,13 @@ import {
   Lock,
   BadgeCheck,
   FileCheck2,
-  ServerCog,
   RotateCcw,
   Brain,
   Target,
 } from "lucide-react";
 import Brand from "../components/Brand";
 import WebChat from "../components/WebChat";
+import SecurityPrivacySection from "../components/SecurityPrivacySection";
 export const plans = [
   {
     id: "inicial",
@@ -522,54 +522,7 @@ export default function Landing() {
           </div>
         </section>
       </main>
-      <section className="trust-section">
-        <p className="eyebrow">CONFIANZA Y CUMPLIMIENTO</p>
-        <h2>La seguridad es nuestra ventaja competitiva</h2>
-        <p className="trust-lead">
-          No es un extra: es la base del sistema. Aislamiento de datos por
-          empresa, firma electrónica cifrada y vigilancia 24/7 —{" "}
-          <Link to="/seguridad">mira los 12 controles que aplicamos</Link>.
-        </p>
-        <div className="trust-grid">
-          <article>
-            <FileCheck2 size={26} />
-            <h3>Claves de acceso SRI</h3>
-            <p>
-              Clave de acceso de 49 dígitos (módulo 11) y secuencias atómicas
-              por establecimiento y punto de emisión.
-            </p>
-          </article>
-          <article>
-            <BadgeCheck size={26} />
-            <h3>Estructura tributaria completa</h3>
-            <p>
-              IVA 0%, 5% y 15%, XML conforme al esquema del SRI v1.1.0 y RIDE
-              en PDF listo para compartir.
-            </p>
-          </article>
-          <article>
-            <Lock size={26} />
-            <h3>Tus datos aislados</h3>
-            <p>
-              Aislamiento por tenant con Row Level Security en todas las
-              tablas: cada empresa solo accede a lo suyo.
-            </p>
-          </article>
-          <article>
-            <ServerCog size={26} />
-            <h3>Infraestructura con controles</h3>
-            <p>
-              PostgreSQL, cifrado en tránsito (TLS) y certificados en
-              almacenamiento privado.
-            </p>
-          </article>
-        </div>
-        <p className="scope-note">
-          MULTIFACTU no vende firmas electrónicas ni declara respaldo oficial
-          del SRI. La firma XAdES-BES se genera con tu propio certificado
-          (.p12) y la autorización de cada comprobante depende del SRI.
-        </p>
-      </section>
+      <SecurityPrivacySection />
       <footer>
         <Brand />
         <p>Sistema de facturación, alquileres y gestión con IA para negocios de Ecuador.</p>

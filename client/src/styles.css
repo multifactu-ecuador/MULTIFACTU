@@ -1351,59 +1351,6 @@
   line-height: 1.9;
   max-width: 950px;
 }
-.trust-section {
-  background: #0c0c10;
-  border-top: 1px solid #29292f;
-  padding: 70px max(30px, calc((100vw - 1248px) / 2));
-}
-.trust-section h2 {
-  font-size: 40px;
-  letter-spacing: -1.6px;
-  margin: 8px 0 36px;
-}
-.trust-lead {
-  margin: -20px 0 34px;
-  max-width: 660px;
-  font-size: 15.5px;
-  line-height: 1.7;
-  color: #92929c;
-}
-.trust-lead a {
-  color: #cdff28;
-  font-weight: 700;
-  text-decoration: none;
-}
-.trust-lead a:hover {
-  text-decoration: underline;
-}
-.trust-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-  gap: 18px;
-  margin-bottom: 30px;
-}
-.trust-grid article {
-  background: #111114;
-  border: 1px solid #232329;
-  border-radius: 14px;
-  padding: 24px;
-}
-.trust-grid article svg {
-  color: #cdff28;
-  margin-bottom: 14px;
-}
-.trust-grid h3 {
-  font-size: 16px;
-  margin-bottom: 8px;
-}
-.trust-grid p {
-  font-size: 13px;
-  color: #92929c;
-  line-height: 1.6;
-}
-.trust-section .scope-note {
-  margin-top: 4px;
-}
 .trial-section {
   position: relative;
   overflow: hidden;
