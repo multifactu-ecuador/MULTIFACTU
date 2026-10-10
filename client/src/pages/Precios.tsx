@@ -6,10 +6,12 @@ import {
   initializePaddle,
   type Environments,
   type Paddle,
+  type PaddleSetupPwCustomer,
   type PricePreviewParams,
   type PricePreviewResponse,
 } from "@paddle/paddle-js";
 import Brand from "../components/Brand";
+import { db } from "../lib/supabase";
 import { TIERES, type Tier } from "../lib/preciosPaddle";
 
 type Ciclo = "month" | "year";
@@ -46,12 +48,18 @@ if (TIERES.some((t) => !t.priceId.month || !t.priceId.year)) {
 }
 
 // Inicialización única de Paddle.js (StrictMode no debe cargar el script dos veces).
+// pwCustomer (Paddle Retain): identidad de facturación del cliente Paddle
+// YA resuelta en el servidor; sólo se envía en production (Retain no existe
+// en sandbox) y sólo si el usuario autenticado tiene suscripción.
 let inicializacion: Promise<Paddle | undefined> | null = null;
-function iniciarPaddle(): Promise<Paddle | undefined> {
+function iniciarPaddle(
+  pwCustomer?: PaddleSetupPwCustomer,
+): Promise<Paddle | undefined> {
   if (!inicializacion) {
     inicializacion = initializePaddle({
       token: TOKEN as string,
       environment: ENTORNO as Environments,
+      ...(pwCustomer ? { pwCustomer } : {}),
       eventCallback: (evento) => {
         // Respaldo del successUrl: si el checkout se completa, aterrizar en /welcome.
         if (evento.name === "checkout.completed") {
@@ -71,7 +79,61 @@ export default function Precios() {
   const [cargandoPrecios, setCargandoPrecios] = useState(true);
   const [ciclo, setCiclo] = useState<Ciclo>("month");
   const [error, setError] = useState<string | null>(null);
-  const { user } = useUser();
+  const { user, isLoaded } = useUser();
+  /** Cliente Paddle del usuario (si tiene suscripción), resuelto en el
+   *  servidor; null = sin sesión, sin suscripción o sin resolver. */
+  const [clientePaddle, setClientePaddle] = useState<{
+    customerId: string;
+    estado: string | null;
+    acceso: boolean;
+  } | null>(null);
+  /** false mientras se resuelve el estado de facturación del usuario. */
+  const [estadoResuelto, setEstadoResuelto] = useState(false);
+
+  // customer_id de Paddle del usuario autenticado vía paddle-portal
+  // (acción "estado"; el servidor lo resuelve por email, nunca lo manda el
+  // cliente). El checkout NO depende de esto: sin sesión o tras 3 s se
+  // inicia igual, sin pwCustomer.
+  useEffect(() => {
+    if (!isLoaded) return;
+    let vivo = true;
+    const resolver = (dato: typeof clientePaddle) => {
+      if (!vivo) return;
+      setClientePaddle(dato);
+      setEstadoResuelto(true);
+    };
+    const limite = setTimeout(() => resolver(null), 3000);
+    if (!user) {
+      clearTimeout(limite);
+      resolver(null);
+      return () => {
+        vivo = false;
+        clearTimeout(limite);
+      };
+    }
+    db()
+      .functions.invoke("paddle-portal", { body: { action: "estado" } })
+      .then(({ data, error: fallo }) => {
+        clearTimeout(limite);
+        resolver(
+          !fallo && typeof data?.customerId === "string"
+            ? {
+                customerId: data.customerId,
+                estado: typeof data.estado === "string" ? data.estado : null,
+                acceso: data.acceso === true,
+              }
+            : null,
+        );
+      })
+      .catch(() => {
+        clearTimeout(limite);
+        resolver(null);
+      });
+    return () => {
+      vivo = false;
+      clearTimeout(limite);
+    };
+  }, [isLoaded, user?.id]);
 
   // País server-side (cabecera de Vercel). Sin función o sin cabecera →
   // undefined y NO se envía address: Paddle infiere por IP.
@@ -90,11 +152,18 @@ export default function Precios() {
     };
   }, []);
 
-  // Inicializar Paddle.js sólo con configuración válida.
+  // Inicializar Paddle.js sólo con configuración válida y con el estado
+  // de facturación resuelto (o agotado el tiempo de espera de 3 s).
   useEffect(() => {
-    if (ERRORES_CONFIG.length > 0) return;
+    if (ERRORES_CONFIG.length > 0 || !estadoResuelto) return;
     let vivo = true;
-    iniciarPaddle()
+    // Retain sólo existe en la cuenta live: pwCustomer únicamente en
+    // production y sólo con el ctm_ que resolvió el servidor.
+    const pwCustomer =
+      ENTORNO === "production" && clientePaddle?.customerId
+        ? { id: clientePaddle.customerId }
+        : undefined;
+    iniciarPaddle(pwCustomer)
       .then((p) => {
         if (!vivo) return;
         if (p) setPaddle(p);
@@ -106,7 +175,7 @@ export default function Precios() {
     return () => {
       vivo = false;
     };
-  }, []);
+  }, [estadoResuelto, clientePaddle]);
 
   // Una sola llamada PricePreview con los 6 priceIds (mensual + anual de los
   // 3 planes): el interruptor sólo lee del mapa ya cargado.

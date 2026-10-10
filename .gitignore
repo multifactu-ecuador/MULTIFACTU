@@ -14,3 +14,7 @@ server/.env.*
 .env*
 !.env.example
 supabase/.temp/
+# Secreto de firma del destino de notificación Paddle live (lo escribe
+# scripts/paddle-live-migrate.ts; sólo vive en la máquina hasta que viaja
+# a Supabase secrets por la CLI).
+.paddle-live-secret.txt

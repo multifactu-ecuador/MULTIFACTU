@@ -12,10 +12,16 @@
 //      completo filtraría ids y enlaces profundos que el front no necesita.
 // Las URLs del portal son de un solo uso y caducan: se minte una fresca
 // por clic, nunca se cachea.
+//
+// Acción alternativa "estado": con la misma resolución server-side del
+// customer_id devuelve { customerId, estado, acceso } (identidad de
+// facturación para pwCustomer de Paddle Retain y para mostrar el plan);
+// NO mintea sesión del portal.
 import { createClient } from "npm:@supabase/supabase-js@2.117.2";
 import { guardar } from "../_shared/guard.ts";
 import { verificarEntorno } from "../_shared/verificar.ts";
 import { paddleApi } from "../_shared/paddle.ts";
+import { otorgaAcceso } from "../_shared/paddle-acceso.ts";
 
 /** Email del payload del JWT ya verificado por guardar() (PostgREST
  *  validó la firma del token de Clerk): sirve de respaldo cuando el
@@ -82,6 +88,26 @@ Deno.serve(async (req) => {
         { error: "Aún no tienes una suscripción con Paddle" },
         404,
       );
+    // Acción "estado": identidad de facturación + estado/acceso, sin
+    // mintear sesión. El id sigue saliendo del servidor (email del
+    // usuario autenticado): el cliente jamás elige un customer_id.
+    const cuerpo = (await req.json().catch(() => ({}))) as { action?: unknown };
+    if (cuerpo.action === "estado") {
+      const sub = await admin
+        .from("paddle_suscripciones")
+        .select("estado")
+        .eq("customer_id", customerId)
+        .order("actualizado_en", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (sub.error) throw Error(sub.error.message);
+      const estado = (sub.data?.estado as string | null) ?? null;
+      return json({
+        customerId,
+        estado,
+        acceso: otorgaAcceso(estado ? { estado } : null),
+      });
+    }
     // 3) Suscripciones del cliente: habilitan los enlaces profundos del
     //    portal (cancelar / actualizar medio de pago de cada una).
     const subs = await admin

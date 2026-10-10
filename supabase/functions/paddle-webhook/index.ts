@@ -14,6 +14,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2.117.2";
 import { guardar } from "../_shared/guard.ts";
 import { paddleSoloFirma } from "../_shared/paddle.ts";
+import { ipsPaddle, ipPermitida } from "../_shared/paddle-ips.ts";
 import { procesarEvento } from "./procesar.ts";
 
 const json = (v: unknown, status = 200) =>
@@ -22,11 +23,32 @@ const json = (v: unknown, status = 200) =>
     headers: { "Content-Type": "application/json" },
   });
 
+/** IP de origen declarada por el gateway de Supabase (x-forwarded-for):
+ *  el primer salto es el cliente real. connInfo del runtime devuelve IPs
+ *  internas y NO sirve como señal de cliente (ver paddle-ips.ts). */
+function ipOrigen(req: Request): string {
+  const xff = req.headers.get("x-forwarded-for") ?? "";
+  return xff.split(",")[0]?.trim() ?? "";
+}
+
 Deno.serve(async (req) => {
   // Denegar por defecto: sólo la ruta registrada; la autenticación real es
   // la firma HMAC, verificada más abajo contra el cuerpo crudo.
   const ctx = await guardar(req, "/paddle-webhook");
   if (ctx instanceof Response) return ctx;
+  // Allowlist de ORIGEN (endurecimiento; la autenticación real es la firma
+  // HMAC más abajo): sólo entregas desde las IPs que Paddle publica en
+  // https://api.paddle.com/ips — lista fresca con caché de 1 h, jamás
+  // hardcodeada. Se comprueba ANTES de leer el cuerpo. Sin lista vigente
+  // (503) o sin IP declarada / IP fuera de lista (403) no se procesa nada:
+  // cualquier no-2xx hace que Paddle reintente.
+  const cidrs = await ipsPaddle();
+  if (!cidrs)
+    return json({ error: "Lista de IPs de Paddle no disponible" }, 503);
+  const origen = ipOrigen(req);
+  if (!origen) return json({ error: "Origen de la entrega sin declarar" }, 403);
+  if (!ipPermitida(origen, cidrs))
+    return json({ error: "IP de origen no permitida" }, 403);
   const url = Deno.env.get("SUPABASE_URL"),
     secret = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!url || !secret) return json({ error: "Servicio no configurado" }, 503);
