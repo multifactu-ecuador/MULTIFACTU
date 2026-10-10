@@ -131,7 +131,12 @@ Deno.serve(async (req) => {
         throw Error("Reclamación perdida; no se emite");
     }
     let signed: string,
-      result: { authorized: boolean; xml: string; number: string | null },
+      result: {
+        estado: "AUTORIZADO" | "NO_AUTORIZADO" | "EN_PROCESADO";
+        authorized: boolean;
+        xml: string;
+        number: string | null;
+      },
       simulacion = mode !== "real",
       mensaje: string;
     if (mode === "real") {
@@ -148,13 +153,31 @@ Deno.serve(async (req) => {
       const cert = await loadCertificate(db, empresa.ruta_p12, p12Password);
       signed = await signXades(draft.xml, cert.privateKeyPem, cert.certPem, cert.certDer, cert.issuerName, cert.serialNumber);
       result = await realSriFlow(signed, (nota.ambiente_sri as "pruebas" | "produccion") ?? "pruebas");
-      mensaje = result.authorized ? "Nota de crédito autorizada por el SRI" : "El SRI no autorizó la nota de crédito";
+      mensaje =
+        result.estado === "AUTORIZADO"
+          ? "Nota de crédito autorizada por el SRI"
+          : result.estado === "EN_PROCESADO"
+            ? "En cola de autorización del SRI (nota de crédito)"
+            : "El SRI no autorizó la nota de crédito";
     } else {
       if (mode !== "simulation") throw Error("SRI_MODE inválido");
       signed = simulateSignature(draft.xml);
       const r = await simulateSoap(signed, id, Deno.env.get("SRI_SIMULATION_RESULT") !== "error");
-      result = r;
+      result = { ...r, estado: r.authorized ? "AUTORIZADO" : "NO_AUTORIZADO" };
       mensaje = "Nota de crédito no firmada ni enviada al SRI";
+    }
+    // EN PROCESADO no es un fallo: el SRI sigue procesando la nota. Se deja
+    // en 'Procesando' y el cron multifactu-reintentar-emision la re-dispara
+    // con la misma clave de acceso pasados 15 minutos.
+    if (result.estado === "EN_PROCESADO") {
+      await db
+        .from("notas_credito")
+        .update({ mensaje })
+        .eq("tenant_id", tenant)
+        .eq("id", id)
+        .eq("claim_token", claim)
+        .eq("estado", "Procesando");
+      return json({ id, estado: "EN_PROCESADO", simulacion });
     }
     const { error: updateError } = await db
       .from("notas_credito")
@@ -174,7 +197,11 @@ Deno.serve(async (req) => {
       .eq("estado", "Procesando");
     if (updateError) throw Error("No se pudo guardar el resultado");
     return json({ id, estado: result.authorized ? "Autorizada" : "Error", simulacion });
-  } catch {
+  } catch (e) {
+    console.error(
+      "notas-procesar: fallo de emisión",
+      e instanceof Error ? e.message : String(e),
+    );
     const { error } = await db
       .from("notas_credito")
       .update({ estado: "Error", mensaje: "Error al firmar/enviar la nota de crédito" })

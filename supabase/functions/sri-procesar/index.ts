@@ -123,7 +123,12 @@ Deno.serve(async (req) => {
         throw Error("Reclamación perdida; no se emite");
     }
     let signed: string,
-      result: { authorized: boolean; xml: string; number: string | null },
+      result: {
+        estado: "AUTORIZADO" | "NO_AUTORIZADO" | "EN_PROCESADO";
+        authorized: boolean;
+        xml: string;
+        number: string | null;
+      },
       simulacion = mode !== "real",
       mensaje: string;
     if (mode === "real") {
@@ -148,9 +153,12 @@ Deno.serve(async (req) => {
         cert.serialNumber,
       );
       result = await realSriFlow(signed, invoice.ambiente_sri);
-      mensaje = result.authorized
-        ? "Autorizada por el SRI"
-        : "El SRI no autorizó el comprobante";
+      mensaje =
+        result.estado === "AUTORIZADO"
+          ? "Autorizada por el SRI"
+          : result.estado === "EN_PROCESADO"
+            ? "En cola de autorización del SRI"
+            : "El SRI no autorizó el comprobante";
     } else {
       if (mode !== "simulation") throw Error("SRI_MODE inválido");
       signed = simulateSignature(draft.xml);
@@ -159,8 +167,22 @@ Deno.serve(async (req) => {
         id,
         Deno.env.get("SRI_SIMULATION_RESULT") !== "error",
       );
-      result = r;
+      result = { ...r, estado: r.authorized ? "AUTORIZADO" : "NO_AUTORIZADO" };
       mensaje = "No firmada criptográficamente ni enviada al SRI";
+    }
+    // EN PROCESADO no es un fallo: el SRI sigue procesando el comprobante.
+    // Se deja en 'Procesando' con un mensaje orientativo y el cron
+    // multifactu-reintentar-emision lo devuelve a Pendiente y lo re-dispara
+    // con la misma clave de acceso pasados 15 minutos.
+    if (result.estado === "EN_PROCESADO") {
+      await db
+        .from("facturas_sri")
+        .update({ mensaje })
+        .eq("tenant_id", tenant)
+        .eq("id", id)
+        .eq("claim_token", claim)
+        .eq("estado", "Procesando");
+      return json({ id, estado: "EN_PROCESADO", simulacion });
     }
     const { error: updateError } = await db
       .from("facturas_sri")
@@ -185,7 +207,11 @@ Deno.serve(async (req) => {
       estado: result.authorized ? "Autorizada" : "Error",
       simulacion,
     });
-  } catch {
+  } catch (e) {
+    console.error(
+      "sri-procesar: fallo de emisión",
+      e instanceof Error ? e.message : String(e),
+    );
     const { error } = await db
       .from("facturas_sri")
       .update({

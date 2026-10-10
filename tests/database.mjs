@@ -22,8 +22,9 @@ const A = "11111111-1111-4111-8111-111111111111",
   B = "22222222-2222-4222-8222-222222222222";
 // El trigger crear_negocio_al_registrarse ya no existe (autenticación Clerk):
 // el alta de negocio la hace el frontend con crear_mi_empresa. El bootstrap
-// replica a mano lo que creaba ese trigger, con el email que ahora vive en
-// usuarios_perfiles (B es el superadmin: su correo es el de la caché de bypass).
+// replica a mano lo que creaba ese trigger. B es superadmin por membresía
+// explícita en private.superadmins: el correo del perfil ya no gobierna
+// (regresión del bypass por correo hardcodeado).
 await db.query(
   `insert into public.empresas(id,tenant_id,nombre,identificacion_registro,razon_social,ruc) values
     ($1,$1,'Empresa A','1710034065','Empresa A',null),
@@ -36,6 +37,7 @@ await db.query(
     ($2::text,$2::uuid,'ADMIN','Beto','lopeznieto2512@gmail.com')`,
   [A, B],
 );
+await db.query(`insert into private.superadmins(tenant_id) values ($1)`, [B]);
 await db.query(
   `insert into public.suscripciones(tenant_id,plan,estado,inicio,fin) values
     ($1,'luxury','trial',now(),now()+interval '7 days'),
@@ -350,6 +352,31 @@ assert.equal(
   assert.equal(acta.vt, "2026-10-05.1");
   assert.equal(acta.vp, "2026-10-05.2");
 }
+// --- Superadmin por membresía: el correo del perfil NO otorga privilegios ---
+// Regresión del bypass por correo: un perfil con el correo del dueño, sin
+// fila en private.superadmins, sigue siendo un tenant normal.
+await owner();
+await db.query(
+  `update public.usuarios_perfiles set email='lopeznieto2512@gmail.com' where id=$1`,
+  [C],
+);
+await user(C);
+assert.equal(
+  (await db.query("select public.mi_acceso() a")).rows[0].a.superadmin,
+  false,
+  "el correo del dueño sin membresía no puede conceder superadmin",
+);
+// Y perder la membresía baja el bypass sin tocar ningún correo.
+await owner();
+await db.query(`delete from private.superadmins where tenant_id=$1`, [tb]);
+await user(B);
+assert.equal(
+  (await db.query("select public.mi_acceso() a")).rows[0].a.superadmin,
+  false,
+  "sin fila en private.superadmins no hay bypass",
+);
+await owner();
+await db.query(`insert into private.superadmins(tenant_id) values ($1)`, [tb]);
 // --- Vault: la contraseña del .p12 nunca queda en texto plano ---
 await user(A);
 await db.query(`select public.guardar_p12_password($1)`, [

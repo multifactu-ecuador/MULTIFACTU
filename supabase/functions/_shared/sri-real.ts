@@ -130,11 +130,59 @@ const soapHeaders = {
   SOAPAction: "",
 };
 
-/** Envía el XML firmado al SRI y devuelve la respuesta de autorización. */
+/** Estados que devuelve el servicio de Autorización del SRI. */
+export type EstadoAutorizacion = "AUTORIZADO" | "NO_AUTORIZADO" | "EN_PROCESADO";
+
+/** Una única consulta de autorización por clave de acceso. */
+async function consultarAutorizacion(
+  endpoint: string,
+  clave: string,
+): Promise<{ estado: EstadoAutorizacion; xml: string; number: string | null }> {
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: soapHeaders,
+    signal: AbortSignal.timeout(20000),
+    body: `<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:sri="http://ec.gob.sri.ws.autorizacion"><soapenv:Body><sri:autorizacionComprobante><claveAccesoComprobante>${clave}</claveAccesoComprobante></sri:autorizacionComprobante></soapenv:Body></soapenv:Envelope>`,
+  });
+  if (!response.ok) throw Error(`Autorización HTTP ${response.status}`);
+  const raw = await response.text();
+  if (raw.length > 1_048_576)
+    throw Error("Respuesta de autorización del SRI demasiado grande");
+  const decoded = raw
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&");
+  // AUTORIZADO se comprueba primero: "NO AUTORIZADO" no puede confundirse
+  // porque el estado va pegado a las etiquetas (<estado>AUTORIZADO</estado>).
+  const estado: EstadoAutorizacion = decoded.includes(
+    "<estado>AUTORIZADO</estado>",
+  )
+    ? "AUTORIZADO"
+    : decoded.includes("<estado>EN PROCESADO</estado>")
+      ? "EN_PROCESADO"
+      : "NO_AUTORIZADO";
+  const number = decoded.match(/<numeroAutorizacion>([^<]+)</)?.[1] ?? null;
+  return { estado, xml: decoded, number };
+}
+
+// El SRI responde habitualmente EN PROCESADO y autoriza unos segundos después:
+// con una sola consulta ese retraso se convertía en un Error definitivo que
+// nadie volvía a mirar. Se consulta con backoff corto (4 consultas, ~30 s de
+// espera) y, si se agota el presupuesto, el llamador deja el comprobante en
+// 'Procesando': el cron multifactu-reintentar-emision lo devuelve a Pendiente
+// y lo re-dispara con la misma clave de acceso pasados 15 minutos.
+const ESPERAS_AUTORIZACION_MS = [5_000, 10_000, 15_000];
+
+/** Envía el XML firmado al SRI y devuelve el estado de su autorización. */
 export async function realSriFlow(
   signedXml: string,
   ambiente: "pruebas" | "produccion",
-): Promise<{ authorized: boolean; xml: string; number: string | null }> {
+): Promise<{
+  estado: EstadoAutorizacion;
+  authorized: boolean;
+  xml: string;
+  number: string | null;
+}> {
   const ep = sriEndpoints[ambiente];
   const bin = b64(new TextEncoder().encode(signedXml));
   const reception = await fetch(ep.recepcion, {
@@ -154,25 +202,18 @@ export async function realSriFlow(
   }
   const key = signedXml.match(/<claveAcceso>(\d{49})<\/claveAcceso>/)?.[1];
   if (!key) throw Error("Clave de acceso ausente");
-  const authorization = await fetch(ep.autorizacion, {
-    method: "POST",
-    headers: soapHeaders,
-    signal: AbortSignal.timeout(20000),
-    body: `<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:sri="http://ec.gob.sri.ws.autorizacion"><soapenv:Body><sri:autorizacionComprobante><claveAccesoComprobante>${key}</claveAccesoComprobante></sri:autorizacionComprobante></soapenv:Body></soapenv:Envelope>`,
-  });
-  if (!authorization.ok)
-    throw Error(`Autorización HTTP ${authorization.status}`);
-  const raw = await authorization.text();
-  if (raw.length > 1_048_576)
-    throw Error("Respuesta de autorización del SRI demasiado grande");
-  const decoded = raw
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&amp;/g, "&");
-  const authorized = decoded.includes("<estado>AUTORIZADO</estado>");
-  const number =
-    decoded.match(/<numeroAutorizacion>([^<]+)</)?.[1] ?? null;
-  return { authorized, xml: decoded, number };
+  let consulta = await consultarAutorizacion(ep.autorizacion, key);
+  for (const espera of ESPERAS_AUTORIZACION_MS) {
+    if (consulta.estado !== "EN_PROCESADO") break;
+    await new Promise((resolver) => setTimeout(resolver, espera));
+    consulta = await consultarAutorizacion(ep.autorizacion, key);
+  }
+  return {
+    estado: consulta.estado,
+    authorized: consulta.estado === "AUTORIZADO",
+    xml: consulta.xml,
+    number: consulta.number,
+  };
 }
 
 /** Descarga el .p12 desde Storage (bucket privado "certificados"). */

@@ -37,9 +37,11 @@ export interface SaveFiscalSignatureInput {
 }
 
 export class FiscalSignatureValidationError extends Error {
-  constructor(public readonly code: string) {
+  readonly code: string;
+  constructor(code: string) {
     super(`Fiscal signature validation failed: ${code}`);
     this.name = "FiscalSignatureValidationError";
+    this.code = code;
   }
 }
 
@@ -205,8 +207,14 @@ export async function firmarBorradorFacturaParaTenant(input: SignStoredInvoiceIn
     .eq("id", input.invoiceId)
     .eq("estado", "Procesando");
   if (input.claimToken) update = update.eq("claim_token", input.claimToken);
-  const { error: updateError } = await update;
+  const { data: updatedRows, error: updateError } = await update.select("id");
   if (updateError) throw new Error("Could not persist signed invoice XML", { cause: updateError });
+  // Sin fila afectada la reclamación ya no es nuestra (por ejemplo el
+  // barredor devolvió la factura a Pendiente): el firmado NO se guardó y
+  // responder éxito haría que el llamador emitiera sobre un claim perdido.
+  if (!updatedRows || updatedRows.length !== 1) {
+    throw new Error("Invoice claim lost before the signed XML was persisted");
+  }
 
   return signature;
 }
