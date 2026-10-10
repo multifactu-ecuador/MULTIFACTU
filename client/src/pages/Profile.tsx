@@ -1,6 +1,8 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { db, check } from "../lib/supabase";
 import { useAuth } from "../auth/AuthContext";
+import { ShieldCheck } from "lucide-react";
+import SecureHint from "../components/SecureHint";
 
 type Regimen = "general" | "rimpe_emprendedor" | "rimpe_negocio_popular";
 const labelRegimen = (r: Regimen) =>
@@ -726,6 +728,11 @@ export default function Profile() {
             }
           />
         </label>
+        <SecureHint icono={ShieldCheck}>
+          Tu archivo viaja cifrado (TLS) y se guarda con AES-256-GCM en un
+          almacén privado: solo se usa para firmar tus comprobantes ante el
+          SRI, nunca se comparte.
+        </SecureHint>
         <p>
           {e.ruta_p12
             ? "Certificado privado almacenado"
@@ -743,6 +750,10 @@ export default function Profile() {
             onChange={(event) => setP12Pwd(event.target.value)}
           />
         </label>
+        <SecureHint>
+          Viaja cifrada por TLS y, solo si coincide con tu .p12, se guarda en
+          Supabase Vault: jamás se almacena en texto plano.
+        </SecureHint>
         <p>
           <button
             type="button"
