@@ -19,6 +19,7 @@ import {
 import Brand from "../components/Brand";
 import WebChat from "../components/WebChat";
 import SecurityPrivacySection from "../components/SecurityPrivacySection";
+import TrustBadges from "../components/TrustBadges";
 export const plans = [
   {
     id: "inicial",
@@ -200,6 +201,7 @@ export default function Landing() {
             </div>
           </div>
         </section>
+        <TrustBadges />
         <div className="industry-strip">
           <span>UNA OPERACIÓN MÁS CLARA PARA</span>
           <b>Facturación electrónica</b>
