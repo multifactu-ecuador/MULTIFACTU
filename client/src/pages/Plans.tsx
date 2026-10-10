@@ -32,6 +32,7 @@ interface DatoSdk {
   modo: string;
 }
 /** Carga el core del SDK v6 (script único por entorno) y devuelve `window.paypal`. */
+let cargaSdk: { src: string; promesa: Promise<SdkPaypal> } | null = null;
 function cargarSdkPaypal(modo: string): Promise<SdkPaypal> {
   const src =
     modo === "sandbox"
@@ -40,26 +41,34 @@ function cargarSdkPaypal(modo: string): Promise<SdkPaypal> {
   const obtener = () => (window as unknown as { paypal?: SdkPaypal }).paypal;
   const yaCargado = obtener();
   if (yaCargado) return Promise.resolve(yaCargado);
-  return new Promise((resolver, rechazar) => {
-    const alListo = () => {
-      const sdk = obtener();
-      if (sdk) resolver(sdk);
-      else rechazar(Error("El SDK de PayPal cargó incompleto"));
-    };
-    const fallo = () => rechazar(Error("No se pudo cargar el SDK de PayPal"));
-    const existente = document.querySelector(`script[src="${src}"]`);
-    if (existente) {
-      existente.addEventListener("load", alListo);
-      existente.addEventListener("error", fallo);
-      return;
-    }
+  if (cargaSdk?.src === src) return cargaSdk.promesa;
+  const promesa = new Promise<SdkPaypal>((resolver, rechazar) => {
     const script = document.createElement("script");
+    const limpiar = () => {
+      cargaSdk = null;
+      script.remove();
+    };
     script.src = src;
     script.async = true;
-    script.onload = alListo;
-    script.onerror = fallo;
+    script.onload = () => {
+      const sdk = obtener();
+      if (sdk) return resolver(sdk);
+      limpiar();
+      rechazar(Error("El SDK de PayPal cargó incompleto"));
+    };
+    // Al fallar se retira el tag para que un reintento vuelva a intentarlo.
+    script.onerror = () => {
+      limpiar();
+      rechazar(
+        Error(
+          "No se pudo cargar el SDK de PayPal: una extensión o la red puede estar bloqueándolo. Usa el enlace de respaldo.",
+        ),
+      );
+    };
     document.head.appendChild(script);
   });
+  cargaSdk = { src, promesa };
+  return promesa;
 }
 export default function Plans() {
   const { access, refresh } = useAuth();
