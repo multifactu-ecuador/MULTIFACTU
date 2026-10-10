@@ -54,20 +54,21 @@ Deno.serve(async (req) => {
   if (!password || password.length > 128)
     return json({ error: "Escribe la contraseña del certificado" }, 400);
 
-  // Límite anti fuerza-bruta por empresa (cuenta éxitos y fracasos).
-  const desde = new Date(Date.now() - VENTANA_MINUTOS * 60000).toISOString();
-  const { count, error: countError } = await admin
-    .from("p12_verify_intentos")
-    .select("id", { count: "exact", head: true })
-    .eq("tenant_id", tenant)
-    .gte("creado_en", desde);
-  if (countError) return json({ error: "No se pudo verificar" }, 500);
-  if ((count ?? 0) >= MAX_INTENTOS)
+  // Límite anti fuerza-bruta por empresa: RPC atómica que registra el
+  // intento y cuenta la ventana en una sola consulta. La versión previa
+  // (count → insert) tenía una carrera TOCTOU: peticiones concurrentes
+  // leían el mismo recuento y todas pasaban el tope.
+  const limite = await admin.rpc("registrar_intento_edge", {
+    p_clave: `p12-verify:${tenant}`,
+    p_limite: MAX_INTENTOS,
+    p_ventana_min: VENTANA_MINUTOS,
+  });
+  if (limite.error) return json({ error: "No se pudo verificar" }, 500);
+  if (limite.data !== true)
     return json(
       { error: `Demasiados intentos. Espera ${VENTANA_MINUTOS} minutos.` },
       429,
     );
-  await admin.from("p12_verify_intentos").insert({ tenant_id: tenant });
 
   const { data: empresa, error: empresaError } = await admin
     .from("empresas")

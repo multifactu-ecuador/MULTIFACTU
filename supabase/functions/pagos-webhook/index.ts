@@ -97,8 +97,19 @@ Deno.serve(async (req) => {
       suscripcion_id: suscripcionId,
       monto: Number.isFinite(monto) ? monto : null,
     });
-    // Clave primaria duplicada = renovación ya procesada (evento reenviado).
-    if (aplicada.error) return json({ ok: true, repetido: true });
+    // Sólo la violación de clave primaria (23505) es un evento reenviado.
+    // Cualquier otro error (caída, timeout) debe responder 5xx para que
+    // PayPal reintente: si devolvemos 200, el cobro ya realizado no
+    // extiende `suscripciones.fin` y PayPal no volverá a enviarlo.
+    if (aplicada.error) {
+      if (aplicada.error.code === "23505")
+        return json({ ok: true, repetido: true });
+      console.error(
+        "pagos-webhook: venta no registrada:",
+        aplicada.error.message,
+      );
+      throw Error("Venta no registrada");
+    }
     const fila = await admin
       .from("suscripciones")
       .select("id,fin,estado")

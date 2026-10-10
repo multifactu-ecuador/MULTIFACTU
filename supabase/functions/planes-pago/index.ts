@@ -56,6 +56,10 @@ Deno.serve(async (req) => {
   if (ctx instanceof Response) return ctx;
   const tenant = ctx.tenant;
   let activeOrder: string | undefined;
+  // Suscripción creada en PayPal pero aún no guardada: si algo falla antes
+  // de persistirla, hay que cancelarla — si no, PayPal seguiría cobrando
+  // cada mes un pedido que nunca se activó (y el reintento crearía otra).
+  let suscripcionCreada: string | undefined;
   try {
     const input = await req.json();
     const mode = Deno.env.get("PAYMENTS_MODE") ?? "demo";
@@ -192,6 +196,7 @@ Deno.serve(async (req) => {
       });
       if (creada.status !== 201 || !creada.data?.id)
         throw Error("PayPal no creó la suscripción");
+      suscripcionCreada = creada.data.id;
       const approve = checkedLink(
         creada.data.links?.find((l) => l.rel === "approve")?.href,
       );
@@ -392,6 +397,31 @@ Deno.serve(async (req) => {
     // a distancia; el genérico solo no decía nada.
     const causa = e instanceof Error ? e.message : "";
     console.error("planes-pago:", causa || String(e));
+    // Si la suscripción ya existía en PayPal pero el pedido no se guardó,
+    // hay que cancelarla: PayPal no sabe que la preparación falló y
+    // renovaría cada mes algo que nunca se activó.
+    if (suscripcionCreada) {
+      try {
+        const cancelada = await apiPaypal(
+          `/v1/billing/subscriptions/${suscripcionCreada}/cancel`,
+          "POST",
+          { reason: "Preparación fallida en MULTIFACTU" },
+        );
+        // 204 cancelada; 404/422 ya estaba cancelada o no era cancelable.
+        if (![204, 404, 422].includes(cancelada.status))
+          console.error(
+            "planes-pago: suscripción huérfana sin cancelar",
+            suscripcionCreada,
+            cancelada.status,
+          );
+      } catch (cancelError) {
+        console.error(
+          "planes-pago: fallo al cancelar suscripción huérfana",
+          suscripcionCreada,
+          cancelError,
+        );
+      }
+    }
     if (activeOrder)
       await admin
         .from("pedidos_planes")
