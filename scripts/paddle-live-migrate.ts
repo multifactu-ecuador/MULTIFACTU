@@ -87,6 +87,20 @@ async function rest(
   return { status: r.status, json };
 }
 
+// El SDK v3 devuelve colecciones PEREZOSAS: `.data` arranca vacío y sólo
+// se llena con `next()` (o iterando). Sin esto el script "veía" 0
+// descuentos y 0 productos — es decir, los gates pasaban en falso.
+async function todas<T>(
+  coleccion: { next: () => Promise<unknown[]>; hasMore: boolean; data: T[] },
+): Promise<T[]> {
+  const salida: T[] = [];
+  do {
+    await coleccion.next();
+    salida.push(...coleccion.data);
+  } while (coleccion.hasMore);
+  return salida;
+}
+
 interface Mapa {
   creado_en: string;
   productos: Array<{ sandbox: string; live: string; nombre: string }>;
@@ -116,21 +130,21 @@ async function migrar() {
     mapa.precios.find((p) => p.sandbox === idSandbox);
 
   // ── 1) Leer sandbox: descuentos primero (si hay, no avanzamos) ──────────
-  const descuentos = await sandbox.discounts.list({ perPage: 100 });
-  if (descuentos.data.length > 0) {
+  const descuentos = await todas(sandbox.discounts.list({ perPage: 100 }));
+  if (descuentos.length > 0) {
     console.error(
       "⚠ sandbox tiene descuentos; no los recreo sin decidirlo juntos:",
     );
-    console.error(JSON.stringify(descuentos.data, null, 2));
+    console.error(JSON.stringify(descuentos, null, 2));
     console.error("Dime cómo proceder (nada se tocó en live).");
     process.exit(2);
   }
   console.log("· Descuentos en sandbox: ninguno (nada que migrar).");
 
   // ── 2) Productos: sólo los del plan; en live se reutiliza por nombre ───
-  const productosSandbox = await sandbox.products.list({ perPage: 100 });
-  const productosLive = await live.products.list({ perPage: 100 });
-  for (const fuera of productosSandbox.data.filter(
+  const productosSandbox = await todas(sandbox.products.list({ perPage: 100 }));
+  const productosLive = await todas(live.products.list({ perPage: 100 }));
+  for (const fuera of productosSandbox.filter(
     (p) => !NOMBRES_OBJETIVO.includes(p.name),
   )) {
     console.log(`· Saltado (no es del plan): "${fuera.name}" (${fuera.id}).`);
@@ -138,13 +152,13 @@ async function migrar() {
 
   const mapaProductos: Array<{ idSandbox: string; idLive: string; nombre: string }> = [];
   for (const plan of NOMBRES_OBJETIVO) {
-    const origen = productosSandbox.data.find((p) => p.name === plan);
+    const origen = productosSandbox.find((p) => p.name === plan);
     if (!origen) {
       console.error(`⚠ No encontré "${plan}" en sandbox: revisa el catálogo origen.`);
       process.exit(3);
     }
     const previo = productoYaMapeado(origen.id);
-    const existente = productosLive.data.find((p) => p.name === plan);
+    const existente = productosLive.find((p) => p.name === plan);
     let idLive: string;
     if (existente) {
       idLive = existente.id;
@@ -167,12 +181,13 @@ async function migrar() {
   // ── 3) Precios: copiar atributos tal cual (importe, moneda, overrides,
   //        ciclo y prueba de 7 días); en live se reutiliza por descripción.
   for (const { idSandbox, idLive, nombre } of mapaProductos) {
-    const preciosSandbox = await sandbox.prices.list({
-      productId: idSandbox,
-      perPage: 100,
-    });
-    const preciosLive = await live.prices.list({ productId: idLive, perPage: 100 });
-    for (const p of preciosSandbox.data) {
+    const preciosSandbox = await todas(
+      sandbox.prices.list({ productId: idSandbox, perPage: 100 }),
+    );
+    const preciosLive = await todas(
+      live.prices.list({ productId: idLive, perPage: 100 }),
+    );
+    for (const p of preciosSandbox) {
       if (p.status !== "active") {
         console.log(`  · Saltado (no activo): ${p.description} (${p.id}).`);
         continue;
@@ -184,7 +199,7 @@ async function migrar() {
         continue;
       }
       const previo = precioYaMapeado(p.id);
-      const existente = preciosLive.data.find((q) => q.description === p.description);
+      const existente = preciosLive.find((q) => q.description === p.description);
       let idLivePrecio: string;
       if (existente) {
         idLivePrecio = existente.id;

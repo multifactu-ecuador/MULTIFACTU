@@ -1,0 +1,69 @@
+{
+  "creado_en": "2026-10-10T19:51:45.314Z",
+  "productos": [
+    {
+      "sandbox": "pro_01m4k5x85jxh4qzt7cdf4rbcrx",
+      "live": "pro_01m4kny6qg7jjwcvb9f7j1ea6h",
+      "nombre": "MULTIFACTU Inicial"
+    },
+    {
+      "sandbox": "pro_01m4k5x9z52d4ebd5x768px65f",
+      "live": "pro_01m4kny72jptmr9b3h47pvwfd6",
+      "nombre": "MULTIFACTU Pro"
+    },
+    {
+      "sandbox": "pro_01m4k5xajhma39qbrhhph3xgb0",
+      "live": "pro_01m4kny78srncmg4x3xa6ep4nq",
+      "nombre": "MULTIFACTU Luxury"
+    }
+  ],
+  "precios": [
+    {
+      "sandbox": "pri_01m4k5x9rmj3nf5z9an3tx4cdg",
+      "live": "pri_01m4kny7qp593d3mrvw1zzxkmf",
+      "plan": "MULTIFACTU Inicial",
+      "ciclo": "year",
+      "descripcion": "MULTIFACTU Inicial anual"
+    },
+    {
+      "sandbox": "pri_01m4k5x9g6ds23sn82trk6kabm",
+      "live": "pri_01m4kny7wyj6rdrn7c0z20s8tq",
+      "plan": "MULTIFACTU Inicial",
+      "ciclo": "month",
+      "descripcion": "MULTIFACTU Inicial mensual"
+    },
+    {
+      "sandbox": "pri_01m4k5xa9kdfd73sjpdcvr703f",
+      "live": "pri_01m4kny8cs584jz19hx29m92yk",
+      "plan": "MULTIFACTU Pro",
+      "ciclo": "year",
+      "descripcion": "MULTIFACTU Pro anual"
+    },
+    {
+      "sandbox": "pri_01m4k5xa3vrkhenybtzcy9v1vy",
+      "live": "pri_01m4kny8hrgbm7t6rc6grcb27z",
+      "plan": "MULTIFACTU Pro",
+      "ciclo": "month",
+      "descripcion": "MULTIFACTU Pro mensual"
+    },
+    {
+      "sandbox": "pri_01m4k5xawayafpejgtqt02p50n",
+      "live": "pri_01m4kny8zhtkpkpmdh10sm55tg",
+      "plan": "MULTIFACTU Luxury",
+      "ciclo": "year",
+      "descripcion": "MULTIFACTU Luxury anual"
+    },
+    {
+      "sandbox": "pri_01m4k5xaq8tq5jbavmgjregnna",
+      "live": "pri_01m4kny94w7tnae6x41feb1gh9",
+      "plan": "MULTIFACTU Luxury",
+      "ciclo": "month",
+      "descripcion": "MULTIFACTU Luxury mensual"
+    }
+  ],
+  "client_token_live": "live_1d5eb38a39301d307a6198de79d",
+  "destino_notificacion": {
+    "id": "ntfset_01m4kny9nvceenx8z5fzt23xad",
+    "destination": "https://pieabvfgokuomzkfotkz.supabase.co/functions/v1/paddle-webhook"
+  }
+}

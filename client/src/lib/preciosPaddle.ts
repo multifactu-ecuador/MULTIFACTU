@@ -1,9 +1,10 @@
 // Catálogo editable de planes para la página de precios con Paddle.
 //
 // Edita aquí textos y features. Los priceId (pri_…) NO son secretos: son
-// identificadores públicos del catálogo. Se pegan después de crear el
-// catálogo en la cuenta sandbox con:
-//   $env:PADDLE_API_KEY="pdl_sdbx_..."; npx tsx scripts/seed-paddle-catalog.ts
+// identificadores públicos del catálogo. Los IDs de abajo son los de la
+// cuenta LIVE, replicados desde sandbox con:
+//   npx tsx scripts/paddle-live-migrate.ts
+// (correspondencia completa en scripts/paddle-live-mapping.json).
 // (Mantener mes/año alineados con los USD de PLAN_BASE en
 // supabase/functions/_shared/pago-plan.ts: 6.99 / 11.99 / 18.99.)
 
@@ -30,8 +31,8 @@ export const TIERES: Tier[] = [
       "Compartir comprobantes por WhatsApp/Correo",
     ],
     priceId: {
-      month: "pri_01m4k5x9g6ds23sn82trk6kabm",
-      year: "pri_01m4k5x9rmj3nf5z9an3tx4cdg",
+      month: "pri_01m4kny7wyj6rdrn7c0z20s8tq",
+      year: "pri_01m4kny7qp593d3mrvw1zzxkmf",
     },
   },
   {
@@ -46,8 +47,8 @@ export const TIERES: Tier[] = [
       "Flujo completo de comprobantes",
     ],
     priceId: {
-      month: "pri_01m4k5xa3vrkhenybtzcy9v1vy",
-      year: "pri_01m4k5xa9kdfd73sjpdcvr703f",
+      month: "pri_01m4kny8hrgbm7t6rc6grcb27z",
+      year: "pri_01m4kny8cs584jz19hx29m92yk",
     },
     badge: "VENTAS + ALQUILER",
   },
@@ -65,8 +66,8 @@ export const TIERES: Tier[] = [
       "Base para integración SRI y firma electrónica",
     ],
     priceId: {
-      month: "pri_01m4k5xaq8tq5jbavmgjregnna",
-      year: "pri_01m4k5xawayafpejgtqt02p50n",
+      month: "pri_01m4kny94w7tnae6x41feb1gh9",
+      year: "pri_01m4kny8zhtkpkpmdh10sm55tg",
     },
   },
 ];
