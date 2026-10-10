@@ -13,11 +13,11 @@ interface SesionPaypal {
   ): Promise<void>;
 }
 interface InstanciaPaypal {
-  createPayPalSubscriptionSession(opciones: {
+  createPayPalSubscriptionPaymentSession?: (opciones: {
     onApprove: (datos: { subscriptionId: string }) => void | Promise<void>;
     onCancel?: (datos: { subscriptionId?: string }) => void;
     onError?: (error: { code?: string; message?: string }) => void;
-  }): SesionPaypal;
+  }) => SesionPaypal;
 }
 interface SdkPaypal {
   createInstance(opciones: {
@@ -133,10 +133,14 @@ export default function Plans() {
       const base = await cargarSdkPaypal(sdk.modo);
       const instancia = await base.createInstance({
         clientId: sdk.clientId,
-        components: ["paypal-payments"],
+        // Cada componente es un script aparte: sin paypal-subscriptions no
+        // existe createPayPalSubscriptionPaymentSession.
+        components: ["paypal-payments", "paypal-subscriptions"],
         pageType: "checkout",
       });
-      sesion.current = instancia.createPayPalSubscriptionSession({
+      if (typeof instancia.createPayPalSubscriptionPaymentSession !== "function")
+        throw Error("El SDK de PayPal no cargó el módulo de suscripciones");
+      sesion.current = instancia.createPayPalSubscriptionPaymentSession({
         onApprove: async (datos) => {
           setBusy(true);
           try {
