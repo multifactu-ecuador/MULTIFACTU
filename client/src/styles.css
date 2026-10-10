@@ -2826,6 +2826,16 @@ a.business-tile:focus-visible {
   display: flex;
   gap: 15px;
 }
+/* Botón oficial de PayPal (web component del SDK v6). */
+.payment-actions .paypal-slot {
+  width: 100%;
+  max-width: 350px;
+}
+.payment-actions paypal-button {
+  display: block;
+  width: 100%;
+  --paypal-button-border-radius: 10px;
+}
 .modal-backdrop {
   position: fixed;
   inset: 0;

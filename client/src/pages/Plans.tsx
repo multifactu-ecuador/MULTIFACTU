@@ -5,15 +5,74 @@ import { plans } from "./Landing";
 import { db, money } from "../lib/supabase";
 import { useAuth } from "../auth/AuthContext";
 import type { PlanOrder } from "../../../supabase/functions/_shared/pago-plan.ts";
+/** Contrato mínimo del JavaScript SDK v6 de PayPal que usa esta página. */
+interface SesionPaypal {
+  start(
+    opciones: { presentationMode: string },
+    promesa: Promise<{ subscriptionId: string }>,
+  ): Promise<void>;
+}
+interface InstanciaPaypal {
+  createPayPalSubscriptionSession(opciones: {
+    onApprove: (datos: { subscriptionId: string }) => void | Promise<void>;
+    onCancel?: (datos: { subscriptionId?: string }) => void;
+    onError?: (error: { code?: string; message?: string }) => void;
+  }): SesionPaypal;
+}
+interface SdkPaypal {
+  createInstance(opciones: {
+    clientId: string;
+    components?: string[];
+    pageType?: string;
+  }): Promise<InstanciaPaypal>;
+}
+/** client id + entorno que devuelve `prepare` para cargar el SDK oficial. */
+interface DatoSdk {
+  clientId: string;
+  modo: string;
+}
+/** Carga el core del SDK v6 (script único por entorno) y devuelve `window.paypal`. */
+function cargarSdkPaypal(modo: string): Promise<SdkPaypal> {
+  const src =
+    modo === "sandbox"
+      ? "https://www.sandbox.paypal.com/web-sdk/v6/core"
+      : "https://www.paypal.com/web-sdk/v6/core";
+  const obtener = () => (window as unknown as { paypal?: SdkPaypal }).paypal;
+  const yaCargado = obtener();
+  if (yaCargado) return Promise.resolve(yaCargado);
+  return new Promise((resolver, rechazar) => {
+    const alListo = () => {
+      const sdk = obtener();
+      if (sdk) resolver(sdk);
+      else rechazar(Error("El SDK de PayPal cargó incompleto"));
+    };
+    const fallo = () => rechazar(Error("No se pudo cargar el SDK de PayPal"));
+    const existente = document.querySelector(`script[src="${src}"]`);
+    if (existente) {
+      existente.addEventListener("load", alListo);
+      existente.addEventListener("error", fallo);
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = src;
+    script.async = true;
+    script.onload = alListo;
+    script.onerror = fallo;
+    document.head.appendChild(script);
+  });
+}
 export default function Plans() {
   const { access, refresh } = useAuth();
   const [query] = useSearchParams();
   const [order, setOrder] = useState<PlanOrder | null>(null),
     [error, setError] = useState(""),
     [aviso, setAviso] = useState(""),
-    [busy, setBusy] = useState(false);
+    [busy, setBusy] = useState(false),
+    [botonListo, setBotonListo] = useState(false);
   const tokens = useRef<Record<string, string>>({});
   const confirmation = useRef("");
+  const sesion = useRef<SesionPaypal | null>(null);
+  const slot = useRef<HTMLDivElement | null>(null);
   async function invoke(body: Record<string, unknown>) {
     const r = await db().functions.invoke("planes-pago", { body });
     if (r.error) {
@@ -28,12 +87,14 @@ export default function Plans() {
       order?: PlanOrder;
       aviso?: string;
       notice?: string;
+      sdk?: DatoSdk;
     };
   }
   async function buy(plan: string) {
     setBusy(true);
     setError("");
     setAviso("");
+    setBotonListo(false);
     try {
       tokens.current[plan] ??= crypto.randomUUID();
       const r = await invoke({
@@ -42,18 +103,60 @@ export default function Plans() {
         token: tokens.current[plan],
       });
       if (r.order) setOrder(r.order);
-      // PayPal: seguir de inmediato al enlace de aprobación (rel=approve).
+      // Botón oficial de PayPal: la suscripción ya existe en el servidor y el
+      // SDK sólo abre la ventana de aprobación sin salir de la página.
       if (
+        r.sdk &&
         r.order?.modo === "paypal" &&
         r.order.estado === "PREPARADO" &&
-        r.order.pago_url
+        r.order.payment_id
       )
-        window.location.assign(r.order.pago_url);
+        await prepararBoton(r.sdk);
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo crear el pedido");
     } finally {
       setBusy(false);
     }
+  }
+  /** Inicializa el SDK v6 y crea la sesión de suscripción (una sola vez). */
+  async function prepararBoton(sdk: DatoSdk) {
+    if (!sesion.current) {
+      const base = await cargarSdkPaypal(sdk.modo);
+      const instancia = await base.createInstance({
+        clientId: sdk.clientId,
+        components: ["paypal-payments"],
+        pageType: "checkout",
+      });
+      sesion.current = instancia.createPayPalSubscriptionSession({
+        onApprove: async (datos) => {
+          setBusy(true);
+          try {
+            // La validación completa (plan, importe, custom_id y estado)
+            // sigue ocurriendo en el servidor contra la API de PayPal.
+            const r = await invoke({
+              action: "confirm",
+              subscriptionId: datos.subscriptionId,
+            });
+            if (r.order) setOrder(r.order);
+            setAviso("Pago aprobado en PayPal. Tu plan quedó activo.");
+            await refresh();
+          } catch (e) {
+            setError(
+              e instanceof Error ? e.message : "No se pudo confirmar el pago",
+            );
+          } finally {
+            setBusy(false);
+          }
+        },
+        onCancel: () =>
+          setAviso(
+            "Cancelaste el pago en PayPal: no se hizo ningún cobro. Puedes reintentar con el mismo botón.",
+          ),
+        onError: (e) =>
+          setError(e?.message || "PayPal reportó un error durante el pago"),
+      });
+    }
+    setBotonListo(true);
   }
   async function cancelar() {
     if (
@@ -93,6 +196,36 @@ export default function Plans() {
       })
       .finally(() => setBusy(false));
   }, [query.toString()]);
+  // Monta el botón oficial de PayPal en el slot y conecta el clic a la sesión:
+  // start() recibe la suscripción creada por `prepare` y sólo pide aprobación.
+  useEffect(() => {
+    const subId = order?.payment_id;
+    const caja = slot.current;
+    if (!botonListo || !caja || !subId) return;
+    const boton = document.createElement("paypal-button");
+    boton.setAttribute("type", "pay");
+    boton.setAttribute("class", "paypal-gold");
+    const alPagar = () => {
+      const ses = sesion.current;
+      if (!ses) return;
+      void Promise.resolve(
+        ses.start(
+          { presentationMode: "auto" },
+          Promise.resolve({ subscriptionId: subId }),
+        ),
+      ).catch((e) =>
+        setError(
+          e instanceof Error ? e.message : "No se pudo abrir la ventana de PayPal",
+        ),
+      );
+    };
+    boton.addEventListener("click", alPagar);
+    caja.appendChild(boton);
+    return () => {
+      boton.removeEventListener("click", alPagar);
+      boton.remove();
+    };
+  }, [botonListo, order?.payment_id]);
   const vinculada = access?.suscripcion.paypal_subscription_id;
   const cancelada = access?.suscripcion.paypal_estado === "CANCELLED";
   return (
@@ -209,9 +342,13 @@ export default function Plans() {
             </p>
           ) : order.estado === "PREPARADO" && order.pago_url ? (
             <div className="payment-actions">
-              <a className="button" href={order.pago_url}>
-                Continuar con PayPal ↗
-              </a>
+              {botonListo ? (
+                <div ref={slot} className="paypal-slot" />
+              ) : (
+                <a className="button" href={order.pago_url}>
+                  Continuar con PayPal ↗
+                </a>
+              )}
             </div>
           ) : order.estado === "PAGADO" ? (
             <Link className="button" to="/app">

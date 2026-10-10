@@ -14,7 +14,7 @@ import {
   checkedLink,
   type PlanOrder,
 } from "../_shared/pago-plan.ts";
-import { apiPaypal, catalogoPaypal } from "../_shared/paypal.ts";
+import { apiPaypal, catalogoPaypal, modoPaypal } from "../_shared/paypal.ts";
 
 const UUID = /^[0-9a-f-]{36}$/i;
 const SUB_ID = /^I-[0-9A-Za-z]{8,20}$/;
@@ -62,6 +62,14 @@ Deno.serve(async (req) => {
     if (input.action === "prepare") {
       if (!["demo", "paypal"].includes(mode))
         return json({ error: "Compras deshabilitadas" }, 503);
+      // El client id de PayPal es público por diseño: el frontend lo usa para
+      // cargar el SDK oficial y abrir la ventana de aprobación del botón.
+      // El secret nunca sale del servidor.
+      const clientId = Deno.env.get("PAYPAL_CLIENT_ID");
+      const sdk =
+        mode === "paypal" && clientId
+          ? { clientId, modo: modoPaypal() }
+          : undefined;
       if (
         !Object.hasOwn(PLAN_BASE, input.plan) ||
         !UUID.test(input.token ?? "")
@@ -123,7 +131,7 @@ Deno.serve(async (req) => {
           order,
           notice: "Pedido sin cobro real: no activa una suscripción.",
         });
-      if (order.estado !== "PENDIENTE") return json({ order });
+      if (order.estado !== "PENDIENTE") return json({ order, sdk });
       // Suscripción vigente del mismo plan: se renueva sola, comprar otra
       // sólo duplicaría el cobro. Para otro plan sí se crea la nueva y la
       // anterior se cancela al confirmar.
@@ -161,7 +169,7 @@ Deno.serve(async (req) => {
         .maybeSingle();
       if (locked.error) throw Error("No se pudo preparar");
       if (!locked.data)
-        return json({ order, status: "Preparación en curso" }, 202);
+        return json({ order, sdk, status: "Preparación en curso" }, 202);
       activeOrder = order.id;
       const catalogo = await catalogoPaypal(admin, rate);
       const creada = await apiPaypal<{
@@ -202,7 +210,7 @@ Deno.serve(async (req) => {
         .select("*")
         .single();
       if (save.error) throw Error("Resultado no guardado");
-      return json({ order: save.data });
+      return json({ order: save.data, sdk });
     }
     if (input.action === "confirm") {
       if (
